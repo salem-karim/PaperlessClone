@@ -20,17 +20,10 @@ This will start the following services:
 
 ## Running only the REST API
 
-1. Build the REST API Docker image:
-
 ```bash
-docker build -t rest-api ./rest-api
-```
+docker compose up -d rest-api postgres
+````
 
-2. Run the container:
-
-```bash
-docker run --rm -p 8081:8080 rest-api
-```
 
 * Access the API at `http://localhost:8081`.
 
@@ -41,16 +34,10 @@ docker run --rm -p 8081:8080 rest-api
 1. Build the WebUI Docker image:
 
 ```bash
-docker build -t webui ./webui
-```
+docker compose up -d webui
+````
 
-2. Run the container:
-
-```bash
-docker run --rm -p 3000:80 webui
-```
-
-* Access the frontend at `http://localhost:3000`.
+* Access the frontend at `http://localhost:8080`.
 
 ---
 
@@ -59,13 +46,7 @@ docker run --rm -p 3000:80 webui
 1. Build the OCR Worker Docker image:
 
 ```bash
-docker build -t ocr-worker ./ocr-worker
-```
-
-2. Run the container:
-
-```bash
-docker run --rm ocr-worker
-```
+docker compose up -d ocr-worker
+````
 
 * The worker will process OCR tasks in the background. Make sure it can connect to the REST API and any required queues/databases.
