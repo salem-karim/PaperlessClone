@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 // REST API Controller
+@RequestMapping("/api/documents")
 @RestController
 public class Document_Controller {
 

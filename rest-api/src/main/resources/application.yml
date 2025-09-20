@@ -2,7 +2,7 @@ spring:
   application:
     name: REST-API
   datasource:
-    url: jdbc:postgresql://postgres:5432/paperless
+    url: jdbc:postgresql://localhost:5432/paperless
     username: paperless
     password: secret
   jpa:

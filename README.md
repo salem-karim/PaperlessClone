@@ -1,4 +1,3 @@
-````markdown
 # PaperlessClone
 FH-Technikum Wien SWEN3 Project Paperless Clone
 
@@ -50,3 +49,12 @@ docker compose up -d ocr-worker
 ````
 
 * The worker will process OCR tasks in the background. Make sure it can connect to the REST API and any required queues/databases.
+
+
+
+
+Felix's Cheatsheet:
+
+Dockerfile builden -> wenn änderungen gemacht wurden
+Docker compose starten -> servicces starten (docker desktop muss offen sein)
+```bash
