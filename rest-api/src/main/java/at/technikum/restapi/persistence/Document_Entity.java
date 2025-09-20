@@ -1,4 +1,4 @@
-package at.technikum.restapi;
+package at.technikum.restapi.persistence;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

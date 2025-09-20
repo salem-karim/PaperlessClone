@@ -1,4 +1,4 @@
-package at.technikum.restapi;
+package at.technikum.restapi.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
