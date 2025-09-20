@@ -1,7 +1,10 @@
-package at.technikum.restapi;
+package at.technikum.restapi.controllers;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import at.technikum.restapi.persistence.Document_Entity;
+import at.technikum.restapi.persistence.Document_Repository;
 
 import java.util.List;
 
