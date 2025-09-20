@@ -3,37 +3,37 @@ package at.technikum.restapi.controllers;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import at.technikum.restapi.persistence.Document_Entity;
-import at.technikum.restapi.persistence.Document_Repository;
+import at.technikum.restapi.persistence.DocumentEntity;
+import at.technikum.restapi.persistence.DocumentRepository;
 
 import java.util.List;
 
 // REST API Controller
-@RequestMapping("/api/documents")
+@RequestMapping("/documents")
 @RestController
-public class Document_Controller {
+public class DocumentController {
 
-    private final Document_Repository repository;
+    private final DocumentRepository repository;
 
-    public Document_Controller(Document_Repository repository) {
+    public DocumentController(DocumentRepository repository) {
         this.repository = repository;
     }
 
     // Upload (create)
     @PostMapping
-    public Document_Entity upload(@RequestBody Document_Entity doc) {
+    public DocumentEntity upload(@RequestBody DocumentEntity doc) {
         return repository.save(doc);
     }
 
     // Get all documents
     @GetMapping
-    public List<Document_Entity> getAll() {
+    public List<DocumentEntity> getAll() {
         return repository.findAll();
     }
 
     // Get document by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Document_Entity> getById(@PathVariable Long id) {
+    public ResponseEntity<DocumentEntity> getById(@PathVariable Long id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -41,7 +41,7 @@ public class Document_Controller {
 
     // Update document
     @PutMapping("/{id}")
-    public ResponseEntity<Document_Entity> update(@PathVariable Long id, @RequestBody Document_Entity newDoc) {
+    public ResponseEntity<DocumentEntity> update(@PathVariable Long id, @RequestBody DocumentEntity newDoc) {
         return repository.findById(id)
                 .map(doc -> {
                     doc.setTitle(newDoc.getTitle());
