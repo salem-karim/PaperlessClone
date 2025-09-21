@@ -7,6 +7,7 @@ import at.technikum.restapi.persistence.DocumentEntity;
 import at.technikum.restapi.persistence.DocumentRepository;
 
 import java.util.List;
+import java.util.UUID;
 
 // REST API Controller
 @RequestMapping("/documents")
@@ -33,7 +34,7 @@ public class DocumentController {
 
     // Get document by ID
     @GetMapping("/{id}")
-    public ResponseEntity<DocumentEntity> getById(@PathVariable Long id) {
+    public ResponseEntity<DocumentEntity> getById(@PathVariable UUID id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -41,7 +42,7 @@ public class DocumentController {
 
     // Update document
     @PutMapping("/{id}")
-    public ResponseEntity<DocumentEntity> update(@PathVariable Long id, @RequestBody DocumentEntity newDoc) {
+    public ResponseEntity<DocumentEntity> update(@PathVariable UUID id, @RequestBody DocumentEntity newDoc) {
         return repository.findById(id)
                 .map(doc -> {
                     doc.setTitle(newDoc.getTitle());
@@ -52,7 +53,7 @@ public class DocumentController {
 
     // Delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
         repository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
