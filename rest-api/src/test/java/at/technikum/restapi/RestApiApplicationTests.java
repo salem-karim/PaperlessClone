@@ -14,6 +14,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.util.UUID;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 class DocumentControllerTest {
@@ -53,7 +55,7 @@ class DocumentControllerTest {
 
     @Test
     void testGetDocumentById_notFound() throws Exception {
-        mockMvc.perform(get("/documents/99999"))
+        mockMvc.perform(get("/documents/" + UUID.randomUUID()))
                 .andExpect(status().isNotFound());
     }
 
@@ -64,9 +66,9 @@ class DocumentControllerTest {
                 .build();
 
         mockMvc.perform(post("/documents")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(newDoc)))
-                .andExpect(status().isOk())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(newDoc)))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("New Document"));
     }
 
@@ -77,22 +79,35 @@ class DocumentControllerTest {
                 .build();
 
         mockMvc.perform(put("/documents/" + savedDoc.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updated)))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updated)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("Updated Title"));
     }
 
     @Test
-    void testUpdateDocument_notFound() throws Exception {
+    void testUpdateDocument_badRequest() throws Exception {
         DocumentEntity updated = DocumentEntity.builder()
                 .title("Does Not Exist")
                 .build();
 
         mockMvc.perform(put("/documents/99999")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updated)))
-                .andExpect(status().isNotFound());
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updated)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateDocument_notFound() throws Exception {
+        DocumentEntity updated = DocumentEntity.builder()
+            .id(UUID.randomUUID())
+            .title("Does Not Exist")
+            .build();
+
+        mockMvc.perform(put("/documents/" + updated.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updated)))
+            .andExpect(status().isNotFound());
     }
 
     @Test

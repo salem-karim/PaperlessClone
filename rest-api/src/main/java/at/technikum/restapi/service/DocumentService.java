@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public interface DocumentService {
 
-    void upload(final DocumentDto doc);
+    DocumentDto upload(final DocumentDto doc);
 
     List<DocumentDto> getAll();
 

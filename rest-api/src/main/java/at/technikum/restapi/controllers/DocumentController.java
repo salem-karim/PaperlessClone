@@ -18,9 +18,9 @@ public class DocumentController {
     private final DocumentService service;
 
     @PostMapping
-    public ResponseEntity<Void> upload(@RequestBody final DocumentDto doc) {
-        service.upload(doc);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<DocumentDto> upload(@RequestBody final DocumentDto doc) {
+        final var savedDto = service.upload(doc);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
     }
 
     @GetMapping
