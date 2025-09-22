@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import at.technikum.restapi.persistence.DocumentEntity;
 import at.technikum.restapi.persistence.DocumentRepository;
 import at.technikum.restapi.service.mapper.DocumentMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -28,14 +27,11 @@ public class DocumentServiceImpl implements DocumentService {
         return repository.findAll().stream().map(mapper::toDto).toList();
     }
 
-    private DocumentEntity fetchById(final UUID id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Document not found: " + id));
-    }
-
     @Override
     public DocumentDto getById(final UUID id) {
-        return mapper.toDto(fetchById(id));
+        return repository.findById(id)
+                .map(mapper::toDto)
+                .orElseThrow(() -> new EntityNotFoundException("Document not found: " + id));
     }
 
     @Override
@@ -43,8 +39,7 @@ public class DocumentServiceImpl implements DocumentService {
         if (updateDoc.getId() != null && !updateDoc.getId().equals(id)) {
             throw new IllegalArgumentException("ID in path does not match ID in body");
         }
-        var entity = fetchById(id);
-        mapper.updateEntityFromDto(updateDoc, entity);
+        var entity = mapper.toEntity(updateDoc);
         return mapper.toDto(repository.save(entity));
     }
 
@@ -54,7 +49,6 @@ public class DocumentServiceImpl implements DocumentService {
             throw new EntityNotFoundException("Document not found: " + id);
         }
         repository.deleteById(id);
-        ;
     }
 
 }

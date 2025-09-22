@@ -1,60 +1,63 @@
 package at.technikum.restapi.controllers;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import at.technikum.restapi.persistence.DocumentEntity;
-import at.technikum.restapi.persistence.DocumentRepository;
-
+import at.technikum.restapi.service.DocumentDto;
+import at.technikum.restapi.service.DocumentService;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import java.util.List;
 import java.util.UUID;
 
-// REST API Controller
 @RequestMapping("/documents")
 @RestController
+@RequiredArgsConstructor
 public class DocumentController {
 
-    private final DocumentRepository repository;
+    private final DocumentService service;
 
-    public DocumentController(DocumentRepository repository) {
-        this.repository = repository;
-    }
-
-    // Upload (create)
     @PostMapping
-    public DocumentEntity upload(@RequestBody DocumentEntity doc) {
-        return repository.save(doc);
+    public ResponseEntity<Void> upload(@RequestBody final DocumentDto doc) {
+        service.upload(doc);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    // Get all documents
     @GetMapping
-    public List<DocumentEntity> getAll() {
-        return repository.findAll();
+    public ResponseEntity<List<DocumentDto>> getAll() {
+        final List<DocumentDto> documents = service.getAll();
+        return ResponseEntity.ok(documents);
     }
 
-    // Get document by ID
     @GetMapping("/{id}")
-    public ResponseEntity<DocumentEntity> getById(@PathVariable UUID id) {
-        return repository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<DocumentDto> getById(@PathVariable final UUID id) {
+        try {
+            final DocumentDto document = service.getById(id);
+            return ResponseEntity.ok(document);
+        } catch (final EntityNotFoundException ex) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    // Update document
     @PutMapping("/{id}")
-    public ResponseEntity<DocumentEntity> update(@PathVariable UUID id, @RequestBody DocumentEntity newDoc) {
-        return repository.findById(id)
-                .map(doc -> {
-                    doc.setTitle(newDoc.getTitle());
-                    return ResponseEntity.ok(repository.save(doc));
-                })
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<DocumentDto> update(@PathVariable final UUID id, @RequestBody final DocumentDto updateDoc) {
+        try {
+            final DocumentDto updatedDocument = service.update(id, updateDoc);
+            return ResponseEntity.ok(updatedDocument);
+        } catch (final EntityNotFoundException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (final IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
-    // Delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        repository.deleteById(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> delete(@PathVariable final UUID id) {
+        try {
+            service.delete(id);
+            return ResponseEntity.noContent().build();
+        } catch (final EntityNotFoundException ex) {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

@@ -10,8 +10,6 @@ public interface Mapper<E, D> {
 
     E toEntity(D source);
 
-    void updateEntityFromDto(D updateDoc, E entity);
-
     public default List<D> toDto(final Collection<E> sources) {
         final List<D> dtos = new ArrayList<>();
         sources.forEach(source -> dtos.add(toDto(source)));
