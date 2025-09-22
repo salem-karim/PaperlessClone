@@ -19,4 +19,11 @@ public class DocumentMapper implements Mapper<DocumentEntity, DocumentDto> {
                 .title(dto.getTitle())
                 .build();
     }
+
+    @Override
+    public void updateEntityFromDto(DocumentDto updateDoc, DocumentEntity entity) {
+        if (updateDoc.getTitle() != null) {
+            entity.setTitle(updateDoc.getTitle());
+        }
+    }
 }
