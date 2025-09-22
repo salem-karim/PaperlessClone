@@ -20,11 +20,11 @@ This will start the following services:
 ## Running only the REST API
 
 ```bash
-docker compose up -d rest-api postgres
+docker compose up -d rest-api
 ````
 
-
-* Access the API at `http://localhost:8081`.
+* The other services and postgres will also be started by this
+* Access the API at `http://localhost:8080`.
 
 ---
 
@@ -36,7 +36,7 @@ docker compose up -d rest-api postgres
 docker compose up -d webui
 ````
 
-* Access the frontend at `http://localhost:8080`.
+* Access the frontend at `http://localhost:8000`.
 
 ---
 
