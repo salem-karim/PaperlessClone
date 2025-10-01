@@ -33,7 +33,7 @@ docker compose up -d rest-api
 1. Build the WebUI Docker image:
 
 ```bash
-docker compose up -d webui
+docker compose up -d nginx
 ````
 
 * Access the frontend at `http://localhost:8000`.
