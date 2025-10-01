@@ -3,7 +3,6 @@ import type { DocumentDto } from "./types";
 // GET all documents
 export async function getDocuments(): Promise<DocumentDto[]> {
   const res = await fetch("/api/v1/documents");
-  console.log(res);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<DocumentDto[]>;
 }

@@ -24,43 +24,24 @@ export default function StartPage() {
   }, []);
 
   return (
-    <>
-      <header
-        style={{ display: "flex", gap: "1rem", alignItems: "center" }}
-      ></header>
+    <div className="p-6 max-w-7xl mx-auto">
+      <header className="flex gap-4 items-center mb-6"></header>
 
-      <h1>Documents</h1>
+      <h1 className="text-3xl font-bold mb-4">Documents</h1>
 
-      {loading && <p>Loading documents...</p>}
+      {loading && <p className="text-gray-500 mb-4">Loading documents...</p>}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: "1rem",
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {documents.map((doc) => (
           <div
             key={doc.id}
-            style={{
-              padding: "1rem",
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-              cursor: "pointer",
-              transition: "transform 0.2s",
-            }}
+            className="p-4 border border-gray-300 rounded-lg shadow-sm cursor-pointer transform transition-transform hover:scale-105"
             onClick={() => alert(`Clicked document: ${doc.title}`)}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.transform = "scale(1.03)")
-            }
-            onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
-            <h2 style={{ fontSize: "1.1rem", margin: 0 }}>{doc.title}</h2>
+            <h2 className="text-lg font-semibold">{doc.title}</h2>
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 }
