@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaTrash, FaPencilAlt } from "react-icons/fa";
+import { FaTrash, FaPencil } from "react-icons/fa6";
 import { getDocuments, deleteDocument } from "../lib/documentService";
 import { tryCatch } from "../lib/try-catch";
 import type { DocumentDto } from "../lib/types";
@@ -67,7 +67,7 @@ export default function StartPage() {
                   state={{ from: "/" }} // remember user came from Home
                   className="text-gray-600 dark:text-gray-300 hover:text-blue-500 transition"
                 >
-                  <FaPencilAlt />
+                  <FaPencil />
                 </Link>
 
                 <button
