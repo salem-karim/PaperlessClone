@@ -38,11 +38,14 @@ public class DocumentServiceImpl implements DocumentService {
     public DocumentDto update(final UUID id, final DocumentDto updateDoc) {
         if (updateDoc.getId() != null && !updateDoc.getId().equals(id)) {
             throw new IllegalArgumentException("ID in path does not match ID in body");
-        } else if (!repository.existsById(id)) {
-            throw new EntityNotFoundException("Document not found: " + id);
         }
-        var entity = mapper.toEntity(updateDoc);
-        return mapper.toDto(repository.save(entity));
+        var entity = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Document not found: " + id));
+        if (updateDoc.getTitle() != null) {
+            entity.setTitle(updateDoc.getTitle());
+        }
+        entity = repository.save(entity);
+        return mapper.toDto(entity);
     }
 
     @Override
