@@ -9,6 +9,7 @@ import DocumentDetails from "./components/DocumentDetails.tsx";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
+      {/* <Navbar /> will show on all pages*/}
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/documents/new" element={<DocumentForm />} />

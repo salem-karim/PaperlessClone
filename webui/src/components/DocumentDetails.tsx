@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { getDocumentById } from "../lib/documentService";
 import { tryCatch } from "../lib/try-catch";
 import type { DocumentDto } from "../lib/types";
+import { FaHouse, FaPencil } from "react-icons/fa6";
 
 export default function DocumentDetails() {
   const { id } = useParams<{ id: string }>();
@@ -35,13 +36,13 @@ export default function DocumentDetails() {
           state={{ from: `/documents/${document.id}` }} // pass Details page as "from"
           className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
         >
-          Edit
+          <FaPencil />
         </Link>
         <button
           onClick={() => navigate("/")}
           className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition"
         >
-          Home
+          <FaHouse />
         </button>
       </div>
     </div>
