@@ -8,6 +8,11 @@ spring:
   mvc:
     servlet:
       path: /api/v1
+    rabbitmq:
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
 springdoc:
   api-docs:
     path: /api-docs
