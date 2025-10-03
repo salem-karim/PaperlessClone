@@ -18,7 +18,7 @@ public class RabbitConfig {
 
     @Bean
     public Queue queue() {
-        return new Queue(QUEUE, true); // durable
+        return new Queue(QUEUE, true);
     }
 
     @Bean
