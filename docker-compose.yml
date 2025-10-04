@@ -41,8 +41,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      # rabbitmq:
-      #   condition: service_started
+      rabbitmq:
+        condition: service_started
       # minio:
       #   condition: service_started
       # elasticsearch:
@@ -75,15 +75,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
-  adminer:
-    image: adminer
-    ports:
-      - "9091:8080"
-    depends_on:
-      - postgres
-    networks:
-      - paperless-net
 
   rabbitmq:
     image: rabbitmq:3-management
