@@ -27,9 +27,9 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public DocumentDto upload(final DocumentDto doc) {
         try {
-            publisher.publishDocumentCreated(doc);
             final var saved = repository.save(mapper.toEntity(doc));
             final var dto = mapper.toDto(saved);
+            publisher.publishDocumentCreated(dto);
             log.info("Document with Title={} successfully uploaded", doc.getTitle());
             return dto;
         } catch (final Exception e) {

@@ -12,41 +12,61 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import lombok.Getter;
+
+@Getter
 @Configuration
 public class RabbitConfig {
 
-    // Exchange for document operations
-    public static final String EXCHANGE = "documents.operations";
+    // Remove static - @Value doesn't work with static fields
+    @Value("${EXCHANGE:documents.operations}")
+    private String exchange;
 
-    // Queue names for different operations
-    public static final String DOCUMENTS_QUEUE = "documents.processing";
+    @Value("${QUEUE:documents.processing}")
+    private String documentsQueue;
+
+    @Value("${RESPONSE_QUEUE:documents.processing.response}")
+    private String responseQueue;
+
+    @Value("${OCR_ROUTING_KEY_REQUEST:documents.ocr.request}")
+    private String ocrRoutingKeyRequest;
+
+    @Value("${OCR_ROUTING_KEY_RESPONSE:documents.ocr.response}")
+    private String ocrRoutingKeyResponse;
 
     @Value("${RABBITMQ_HOST:localhost}")
     private String rabbitHost;
 
     @Bean
     TopicExchange documentsExchange() {
-        return new TopicExchange(EXCHANGE);
+        return new TopicExchange(exchange);
     }
 
     @Bean
     Queue documentsQueue() {
-        return new Queue(DOCUMENTS_QUEUE, true);
+        return new Queue(documentsQueue, true);
     }
 
     @Bean
-    Binding documentsBinding(final Queue documentsQueue, final TopicExchange documentsExchange) {
-        // Bind to all document operations
-        return BindingBuilder
-                .bind(documentsQueue)
-                .to(documentsExchange)
-                .with("documents.*");
+    Queue responseQueue() {
+        return new Queue(responseQueue, true);
+    }
+
+    // Binding for requests (REST API -> OCR Worker)
+    @Bean
+    Binding requestBinding(Queue documentsQueue, TopicExchange documentsExchange) {
+        return BindingBuilder.bind(documentsQueue).to(documentsExchange).with(ocrRoutingKeyRequest);
+    }
+
+    // Binding for responses (OCR Worker -> REST API)
+    @Bean
+    Binding responseBinding(Queue responseQueue, TopicExchange documentsExchange) {
+        return BindingBuilder.bind(responseQueue).to(documentsExchange).with(ocrRoutingKeyResponse);
     }
 
     @Bean
     ConnectionFactory connectionFactory() {
-        final var connectionFactory = new CachingConnectionFactory(rabbitHost);
-        return connectionFactory;
+        return new CachingConnectionFactory(rabbitHost);
     }
 
     @Bean
@@ -55,8 +75,8 @@ public class RabbitConfig {
     }
 
     @Bean
-    RabbitTemplate rabbitTemplate(final Jackson2JsonMessageConverter messageConverter) {
-        final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory());
+    RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, Jackson2JsonMessageConverter messageConverter) {
+        final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
         return rabbitTemplate;
     }

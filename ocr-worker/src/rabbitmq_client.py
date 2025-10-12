@@ -37,17 +37,30 @@ class RabbitMQClient:
         self.channel = self.connection.channel()
         logger.info("Connected to RabbitMQ successfully")
 
-        # Declare exchange and queue
+        # Declare exchange
         self.channel.exchange_declare(
             exchange=Config.EXCHANGE, exchange_type="topic", durable=True
         )
+
+        # Declare Request Queue
         self.channel.queue_declare(queue=Config.QUEUE, durable=True)
         self.channel.queue_bind(
             exchange=Config.EXCHANGE,
             queue=Config.QUEUE,
-            routing_key=Config.ROUTING_KEY_LISTEN,
+            routing_key=Config.ROUTING_KEY_REQUEST,
         )
-        logger.info(f"Declared exchange '{Config.EXCHANGE}' and queue '{Config.QUEUE}'")
+
+        # Declare Response Queue
+        self.channel.queue_declare(queue=Config.RESPONSE_QUEUE, durable=True)
+        self.channel.queue_bind(
+            exchange=Config.EXCHANGE,
+            queue=Config.RESPONSE_QUEUE,
+            routing_key=Config.ROUTING_KEY_RESPONSE,
+        )
+
+        logger.info(
+            f"Declared exchange '{Config.EXCHANGE}' and queues: '{Config.QUEUE}', '{Config.RESPONSE_QUEUE}'"
+        )
 
     def start_consuming(self, callback: Callable) -> None:
         """Start consuming messages with the provided callback"""
