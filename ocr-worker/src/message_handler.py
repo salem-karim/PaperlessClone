@@ -2,10 +2,9 @@
 
 import json
 import logging
-from typing import Union
+from typing import Union, Optional, Any
 from pika.adapters.blocking_connection import BlockingChannel
 
-from .models import DocumentDto, OcrResponse
 from .ocr_service import OcrService
 from .rabbitmq_client import RabbitMQClient
 
@@ -20,7 +19,7 @@ class MessageHandler:
         self.ocr_service = ocr_service
 
     def handle_message(
-        self, channel: BlockingChannel, method, properties, body: bytes
+        self, channel: BlockingChannel, method: Any, properties: Any, body: bytes
     ) -> None:
         """
         Process incoming OCR requests
@@ -60,8 +59,8 @@ class MessageHandler:
             # Reject and requeue - let another worker try
             channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
-    def _parse_message(self, body: bytes) -> Union[DocumentDto, str]:
-        """Parse message body to DocumentDto"""
+    def _parse_message(self, body: bytes) -> Union[dict, str]:
+        """Parse message body to dict or string"""
         try:
             return json.loads(body)
         except json.JSONDecodeError:
@@ -95,22 +94,22 @@ class MessageHandler:
         self,
         document_id: str,
         status: str,
-        ocr_text: str = None,
-        ocr_text_path: str = None,
-        error: str = None,
+        ocr_text: Optional[str] = None,
+        ocr_text_path: Optional[str] = None,
+        error: Optional[str] = None,
     ) -> None:
         """Send processing result back to REST API"""
-        response: OcrResponse = {
+        response: dict = {
             "document_id": document_id,
             "status": status,
             "worker": "ocr",
         }
 
-        if ocr_text:
+        if ocr_text is not None:
             response["ocr_text"] = ocr_text
-        if ocr_text_path:
+        if ocr_text_path is not None:
             response["ocr_text_path"] = ocr_text_path
-        if error:
+        if error is not None:
             response["error"] = error
 
         self.rabbitmq_client.publish_response(response)

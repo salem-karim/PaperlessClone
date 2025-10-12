@@ -1,7 +1,7 @@
 """RabbitMQ client for connection and messaging"""
 
 import json
-from logging import getLogger, log
+from logging import getLogger
 from typing import Callable, Optional
 
 import pika
