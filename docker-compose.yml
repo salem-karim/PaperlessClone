@@ -55,8 +55,10 @@ services:
     environment:
       RABBITMQ_HOST: rabbitmq
     depends_on:
-      - rabbitmq
-      - minio
+      rabbitmq:
+        condition: service_healthy
+      # minio:
+      #   condition: service_started
     networks:
       - paperless-net
 

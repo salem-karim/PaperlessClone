@@ -17,16 +17,6 @@ public class DocumentPublisher {
 
     public void publishDocumentCreated(final DocumentDto doc) {
         log.info("Publishing document created event for: {}", doc.getTitle());
-        rabbitTemplate.convertAndSend(EXCHANGE, "documents.created", doc);
-    }
-
-    public void publishDocumentUpdated(final DocumentDto doc) {
-        log.info("Publishing document updated event for: {}", doc.getTitle());
-        rabbitTemplate.convertAndSend(EXCHANGE, "documents.updated", doc);
-    }
-
-    public void publishDocumentDeleted(final String id) {
-        log.info("Publishing document deleted event for ID: {}", id);
-        rabbitTemplate.convertAndSend(EXCHANGE, "documents.deleted", id);
+        rabbitTemplate.convertAndSend(EXCHANGE, "documents.ocr.request", doc);
     }
 }

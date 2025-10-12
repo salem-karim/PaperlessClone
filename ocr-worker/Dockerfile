@@ -13,6 +13,9 @@ ENV UV_LINK_MODE=copy
 # Ensure installed tools can be executed out of the box
 ENV UV_TOOL_BIN_DIR=/usr/local/bin
 
+# IMPORTANT: Make Python output unbuffered so logs appear immediately
+ENV PYTHONUNBUFFERED=1
+
 # Note: maybe need to install tesseract itself for the OCR
 # RUN apt-get update && apt-get install -y tesseract-ocr && rm -rf /var/lib/apt/lists/*
 
@@ -42,4 +45,4 @@ ENTRYPOINT []
 # Use the non-root user to run our application
 USER nonroot
 
-CMD [ "python", "src/main.py" ]
+CMD [ "python", "-u", "-m", "src.main" ]

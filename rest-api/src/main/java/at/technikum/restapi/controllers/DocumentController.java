@@ -18,7 +18,7 @@ public class DocumentController {
 
     private final DocumentService service;
 
-    private final DocumentPublisher publisher; //rabbitMQ integration
+    private final DocumentPublisher publisher; // rabbitMQ integration
 
     @PostMapping
     public ResponseEntity<DocumentDto> upload(@RequestBody final DocumentDto doc) {
@@ -50,8 +50,6 @@ public class DocumentController {
         try {
             final DocumentDto updatedDocument = service.update(id, updateDoc);
 
-            publisher.publishDocumentUpdated(updatedDocument);
-
             return ResponseEntity.ok(updatedDocument);
         } catch (final EntityNotFoundException ex) {
             return ResponseEntity.notFound().build();
@@ -64,8 +62,6 @@ public class DocumentController {
     public ResponseEntity<Void> delete(@PathVariable final UUID id) {
         try {
             service.delete(id);
-
-            publisher.publishDocumentDeleted(id.toString());
 
             return ResponseEntity.noContent().build();
         } catch (final EntityNotFoundException ex) {
