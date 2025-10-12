@@ -42,4 +42,4 @@ ENTRYPOINT []
 # Use the non-root user to run our application
 USER nonroot
 
-CMD [ "python", "main.py" ]
+CMD [ "python", "src/main.py" ]
