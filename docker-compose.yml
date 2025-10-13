@@ -41,8 +41,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      # rabbitmq:
-      #   condition: service_started
+      rabbitmq:
+        condition: service_started
       # minio:
       #   condition: service_started
       # elasticsearch:
@@ -52,9 +52,13 @@ services:
 
   ocr-worker:
     build: ./ocr-worker
+    environment:
+      RABBITMQ_HOST: rabbitmq
     depends_on:
-      - rabbitmq
-      - minio
+      rabbitmq:
+        condition: service_healthy
+      # minio:
+      #   condition: service_started
     networks:
       - paperless-net
 
@@ -76,15 +80,6 @@ services:
       timeout: 5s
       retries: 5
 
-  adminer:
-    image: adminer
-    ports:
-      - "9091:8080"
-    depends_on:
-      - postgres
-    networks:
-      - paperless-net
-
   rabbitmq:
     image: rabbitmq:3-management
     ports:
@@ -92,6 +87,12 @@ services:
       - "9093:15672"
     networks:
       - paperless-net
+    healthcheck:
+      test: rabbitmq-diagnostics -q check_port_connectivity
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   minio:
     image: minio/minio
