@@ -2,6 +2,7 @@ package at.technikum.restapi;
 
 import at.technikum.restapi.persistence.DocumentEntity;
 import at.technikum.restapi.persistence.DocumentRepository;
+import at.technikum.restapi.rabbitMQ.DocumentPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,8 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -29,11 +33,18 @@ class DocumentControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @MockitoBean
+    private DocumentPublisher documentPublisher;
+
     private DocumentEntity savedDoc;
 
     @BeforeEach
     void setup() {
         repository.deleteAll();
+
+        // Mock the publisher so it doesn't actually try to send messages
+        doNothing().when(documentPublisher).publishDocumentCreated(any());
+
         savedDoc = repository.save(DocumentEntity.builder()
                 .title("Test Title")
                 .build());
@@ -88,10 +99,11 @@ class DocumentControllerTest {
     @Test
     void testUpdateDocument_badRequest() throws Exception {
         DocumentEntity updated = DocumentEntity.builder()
-                .title("Does Not Exist")
+                .id(UUID.randomUUID())
+                .title("Mismatched ID")
                 .build();
 
-        mockMvc.perform(put("/documents/99999")
+        mockMvc.perform(put("/documents/" + savedDoc.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updated)))
                 .andExpect(status().isBadRequest());
@@ -100,14 +112,15 @@ class DocumentControllerTest {
     @Test
     void testUpdateDocument_notFound() throws Exception {
         DocumentEntity updated = DocumentEntity.builder()
-            .id(UUID.randomUUID())
-            .title("Does Not Exist")
-            .build();
+                .id(UUID.randomUUID())
+                .title("Does Not Exist")
+                .build();
 
+        // Use ID from created Entity for Not Found Error
         mockMvc.perform(put("/documents/" + updated.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updated)))
-            .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound());
     }
 
     @Test
