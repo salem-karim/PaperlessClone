@@ -1,5 +1,6 @@
 package at.technikum.restapi.rabbitMQ;
 
+import at.technikum.restapi.miniIO.MinIOConfig;
 import at.technikum.restapi.service.DocumentDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ public class DocumentPublisher {
 
     private final RabbitTemplate rabbitTemplate;
     private final RabbitConfig rabbitConfig;
+    //todo: do i need minio config here?
 
     public void publishDocumentCreated(final DocumentDto doc) {
         log.info("Publishing document created event for: {}", doc.getTitle());

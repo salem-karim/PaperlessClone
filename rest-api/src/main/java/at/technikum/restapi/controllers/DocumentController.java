@@ -7,6 +7,7 @@ import at.technikum.restapi.service.DocumentDto;
 import at.technikum.restapi.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -19,10 +20,12 @@ public class DocumentController {
 
     private final DocumentService service;
 
-    @PostMapping
-    public ResponseEntity<DocumentDto> upload(@RequestBody final DocumentDto doc) {
-        log.info("Received upload request: Title={}", doc.getTitle());
-        final var savedDto = service.upload(doc);
+    @PostMapping(consumes = "multipart/form-data")
+    public ResponseEntity<DocumentDto> upload(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("title") String title) {
+        log.info("Received upload request: Title={}", title);
+        final var savedDto = service.upload(file, title);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
     }
 
