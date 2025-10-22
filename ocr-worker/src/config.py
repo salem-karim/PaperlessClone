@@ -15,7 +15,6 @@ class Config:
     # RabbitMQ Routing
     EXCHANGE = os.getenv("RABBITMQ_EXCHANGE", "documents.operations")
     QUEUE = os.getenv("RABBITMQ_QUEUE", "documents.processing")
-    # Fixed: .responses -> .response to match Java configuration
     RESPONSE_QUEUE = os.getenv("RABBITMQ_RESPONSE_QUEUE", f"{QUEUE}.response")
     ROUTING_KEY_REQUEST = os.getenv(
         "RABBITMQ_ROUTING_KEY_REQUEST", "documents.ocr.request"
