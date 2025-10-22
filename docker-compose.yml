@@ -35,6 +35,7 @@ services:
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: paperless
       MINIO_SECRET_KEY: paperless123
+      MINIO_BUCKET: paperless-files
     volumes:
       - ./rest-api:/app # mount source code
       - ~/.m2:/root/.m2 # cache Maven dependencies
@@ -43,8 +44,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_started
-      # minio:
-      #   condition: service_started
+      minio:
+        condition: service_started
       # elasticsearch:
       #   condition: service_started
     networks:
@@ -54,11 +55,12 @@ services:
     build: ./ocr-worker
     environment:
       RABBITMQ_HOST: rabbitmq
+      MINIO_BUCKET: paperless-ocr-text
     depends_on:
       rabbitmq:
         condition: service_healthy
-      # minio:
-      #   condition: service_started
+      minio:
+        condition: service_started
     networks:
       - paperless-net
 

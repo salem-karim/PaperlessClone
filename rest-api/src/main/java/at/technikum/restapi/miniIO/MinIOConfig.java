@@ -8,17 +8,17 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MinIOConfig {
 
-    @Value("${minio.url}")
+    @Value("${MINIO_ENDPOINT:http://localhost:9000}")
     private String minioUrl;
 
-    @Value("${minio.access-key}")
+    @Value("${MINIO_ACCESS_KEY:paperless}")
     private String accessKey;
 
-    @Value("${minio.secret-key}")
+    @Value("${MINIO_SECRET_KEY:paperless123}")
     private String secretKey;
 
     @Bean
-    public MinioClient minioClient() {
+    MinioClient minioClient() {
         return MinioClient.builder()
                 .endpoint(minioUrl)
                 .credentials(accessKey, secretKey)

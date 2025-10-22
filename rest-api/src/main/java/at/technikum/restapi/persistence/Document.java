@@ -13,7 +13,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class DocumentEntity {
+@Table(name = "documents")
+public class Document {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -25,7 +26,15 @@ public class DocumentEntity {
 
     private String contentType;
 
-    // The object key or path in MinIO (e.g. "documents/123e4567.pdf")
+    private Long fileSize; // bytes
+
+    // key or path in MinIO (e.g. "paperless-files/<uuid>-file.pdf")
     private String objectKey;
 
+    @Builder.Default
+    @Column(updatable = false)
+    private java.time.Instant createdAt = java.time.Instant.now();
+
+    @Lob
+    private String ocrTextRef; // could be MinIO key or plain text
 }

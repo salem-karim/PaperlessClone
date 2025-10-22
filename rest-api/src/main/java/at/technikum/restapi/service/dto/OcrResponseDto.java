@@ -1,4 +1,4 @@
-package at.technikum.restapi.service;
+package at.technikum.restapi.service.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

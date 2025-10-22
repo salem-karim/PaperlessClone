@@ -18,7 +18,6 @@ import lombok.Getter;
 @Configuration
 public class RabbitConfig {
 
-    // Remove static - @Value doesn't work with static fields
     @Value("${EXCHANGE:documents.operations}")
     private String exchange;
 

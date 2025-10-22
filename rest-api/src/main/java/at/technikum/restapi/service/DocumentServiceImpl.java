@@ -1,6 +1,5 @@
 package at.technikum.restapi.service;
 
-import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -8,16 +7,14 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import at.technikum.restapi.persistence.DocumentEntity;
+import at.technikum.restapi.miniIO.MinioService;
+import at.technikum.restapi.persistence.Document;
 import at.technikum.restapi.persistence.DocumentRepository;
 import at.technikum.restapi.rabbitMQ.DocumentPublisher;
-import at.technikum.restapi.service.exceptions.*;
+import at.technikum.restapi.service.dto.DocumentDetailDto;
+import at.technikum.restapi.service.dto.DocumentSummaryDto;
+import at.technikum.restapi.service.exception.*;
 import at.technikum.restapi.service.mapper.DocumentMapper;
-
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
-import io.minio.MakeBucketArgs;
-import io.minio.BucketExistsArgs;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,43 +27,14 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentRepository repository;
     private final DocumentMapper mapper;
     private final DocumentPublisher publisher;
-    private final MinioClient minioClient;
+    private final MinioService minioService;
 
-    private static final String BUCKET_NAME = "documents";
-
-    /**
-     * Upload a real file (with title) to MinIO + save metadata + publish OCR event
-     */
     @Override
-    public DocumentDto upload(final MultipartFile file, final String title) {
+    public DocumentSummaryDto upload(MultipartFile file, String title) {
         try {
-            // Step 1: Ensure bucket exists
-            boolean bucketExists = minioClient.bucketExists(
-                    BucketExistsArgs.builder().bucket(BUCKET_NAME).build()
-            );
-            if (!bucketExists) {
-                minioClient.makeBucket(
-                        MakeBucketArgs.builder().bucket(BUCKET_NAME).build()
-                );
-                log.info("Created MinIO bucket '{}'", BUCKET_NAME);
-            }
+            String objectKey = minioService.upload(file);
 
-            // Step 2: Upload file to MinIO
-            String objectKey = UUID.randomUUID() + "-" + file.getOriginalFilename();
-
-            try (InputStream input = file.getInputStream()) {
-                minioClient.putObject(
-                        PutObjectArgs.builder()
-                                .bucket(BUCKET_NAME)
-                                .object(objectKey)
-                                .stream(input, file.getSize(), -1)
-                                .contentType(file.getContentType())
-                                .build()
-                );
-            }
-
-            // Step 3: Save document metadata in database
-            var entity = DocumentEntity.builder()
+            var entity = Document.builder()
                     .title(title)
                     .objectKey(objectKey)
                     .originalFilename(file.getOriginalFilename())
@@ -74,16 +42,10 @@ public class DocumentServiceImpl implements DocumentService {
                     .build();
 
             var saved = repository.save(entity);
-            var dto = mapper.toDto(saved);
-
-            // Step 4: Notify OCR worker via RabbitMQ
+            var dto = mapper.toSummaryDto(saved);
             publisher.publishDocumentCreated(dto);
-
-            log.info("Document uploaded & queued for OCR: Title='{}', Key='{}'", title, objectKey);
             return dto;
-
         } catch (Exception e) {
-            log.error("Failed to upload document '{}': {}", title, e.getMessage(), e);
             throw new DocumentProcessingException("Error uploading document: " + title, e);
         }
     }
@@ -93,10 +55,10 @@ public class DocumentServiceImpl implements DocumentService {
      * Still available for backward compatibility.
      */
     @Override
-    public DocumentDto upload(final DocumentDto doc) {
+    public DocumentSummaryDto upload(final DocumentSummaryDto doc) {
         try {
             var saved = repository.save(mapper.toEntity(doc));
-            var dto = mapper.toDto(saved);
+            var dto = mapper.toSummaryDto(saved);
             publisher.publishDocumentCreated(dto);
             log.info("Document with Title='{}' successfully uploaded (metadata only)", doc.getTitle());
             return dto;
@@ -107,9 +69,9 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public List<DocumentDto> getAll() {
+    public List<DocumentSummaryDto> getAll() {
         try {
-            return repository.findAll().stream().map(mapper::toDto).toList();
+            return repository.findAll().stream().map(mapper::toSummaryDto).toList();
         } catch (final DataAccessException e) {
             log.error("Failed to fetch documents: {}", e.getMessage(), e);
             throw new DocumentProcessingException("Error fetching documents", e);
@@ -117,18 +79,25 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public DocumentDto getById(final UUID id) {
+    public DocumentDetailDto getById(final UUID id) {
         try {
-            return repository.findById(id)
-                    .map(mapper::toDto)
+            var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
+
+            String downloadUrl = minioService.generatePresignedUrl(entity.getObjectKey(), 15);
+            // String ocrText = ocrTextService.getText(entity); // optional, can be
+            // empty/null
+            // TODO: change this to actually get the OCR Text
+            String ocrText = "Template needs change";
+
+            return mapper.toDetailDto(entity, downloadUrl, ocrText);
         } catch (final DataAccessException e) {
             throw new DocumentProcessingException("Error accessing document with ID=" + id, e);
         }
     }
 
     @Override
-    public DocumentDto update(final UUID id, final DocumentDto updateDoc) {
+    public DocumentSummaryDto update(final UUID id, final DocumentSummaryDto updateDoc) {
         if (updateDoc.getId() != null && !updateDoc.getId().equals(id)) {
             throw new InvalidDocumentException("ID in path does not match ID in body");
         }
@@ -142,7 +111,7 @@ public class DocumentServiceImpl implements DocumentService {
             }
 
             entity = repository.save(entity);
-            return mapper.toDto(entity);
+            return mapper.toSummaryDto(entity);
         } catch (final DataAccessException e) {
             throw new DocumentProcessingException("Error updating document with ID=" + id, e);
         }

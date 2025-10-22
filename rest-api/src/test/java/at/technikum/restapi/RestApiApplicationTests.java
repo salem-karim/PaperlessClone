@@ -1,6 +1,6 @@
 package at.technikum.restapi;
 
-import at.technikum.restapi.persistence.DocumentEntity;
+import at.technikum.restapi.persistence.Document;
 import at.technikum.restapi.persistence.DocumentRepository;
 import at.technikum.restapi.rabbitMQ.DocumentPublisher;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,7 +36,7 @@ class DocumentControllerTest {
     @MockitoBean
     private DocumentPublisher documentPublisher;
 
-    private DocumentEntity savedDoc;
+    private Document savedDoc;
 
     @BeforeEach
     void setup() {
@@ -45,7 +45,7 @@ class DocumentControllerTest {
         // Mock the publisher so it doesn't actually try to send messages
         doNothing().when(documentPublisher).publishDocumentCreated(any());
 
-        savedDoc = repository.save(DocumentEntity.builder()
+        savedDoc = repository.save(Document.builder()
                 .title("Test Title")
                 .build());
     }
@@ -72,7 +72,7 @@ class DocumentControllerTest {
 
     @Test
     void testUploadDocument() throws Exception {
-        DocumentEntity newDoc = DocumentEntity.builder()
+        Document newDoc = Document.builder()
                 .title("New Document")
                 .build();
 
@@ -85,7 +85,7 @@ class DocumentControllerTest {
 
     @Test
     void testUpdateDocument_found() throws Exception {
-        DocumentEntity updated = DocumentEntity.builder()
+        Document updated = Document.builder()
                 .title("Updated Title")
                 .build();
 
@@ -98,7 +98,7 @@ class DocumentControllerTest {
 
     @Test
     void testUpdateDocument_badRequest() throws Exception {
-        DocumentEntity updated = DocumentEntity.builder()
+        Document updated = Document.builder()
                 .id(UUID.randomUUID())
                 .title("Mismatched ID")
                 .build();
@@ -111,7 +111,7 @@ class DocumentControllerTest {
 
     @Test
     void testUpdateDocument_notFound() throws Exception {
-        DocumentEntity updated = DocumentEntity.builder()
+        Document updated = Document.builder()
                 .id(UUID.randomUUID())
                 .title("Does Not Exist")
                 .build();

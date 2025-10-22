@@ -1,27 +1,22 @@
 package at.technikum.restapi.service.mapper;
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.ReportingPolicy;
+import org.mapstruct.factory.Mappers;
 
-import at.technikum.restapi.persistence.DocumentEntity;
-import at.technikum.restapi.service.DocumentDto;
-import lombok.NoArgsConstructor;
+import at.technikum.restapi.persistence.Document;
+import at.technikum.restapi.service.dto.DocumentDetailDto;
+import at.technikum.restapi.service.dto.DocumentSummaryDto;
 
-@NoArgsConstructor
-@Component
-public class DocumentMapper implements Mapper<DocumentEntity, DocumentDto> {
-    @Override
-    public DocumentDto toDto(final DocumentEntity entity) {
-        return DocumentDto.builder()
-                .id(entity.getId())
-                .title(entity.getTitle())
-                .build();
-    }
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+public interface DocumentMapper {
+    DocumentMapper INSTANCE = Mappers.getMapper(DocumentMapper.class);
 
-    @Override
-    public DocumentEntity toEntity(final DocumentDto dto) {
-        return DocumentEntity.builder()
-                .id(dto.getId())
-                .title(dto.getTitle())
-                .build();
-    }
+    DocumentSummaryDto toSummaryDto(Document entity);
+
+    DocumentDetailDto toDetailDto(Document entity, String downloadUrl, String ocrText);
+
+    Document toEntity(DocumentSummaryDto dto);
+
+    Document toEntity(DocumentDetailDto dto);
 }

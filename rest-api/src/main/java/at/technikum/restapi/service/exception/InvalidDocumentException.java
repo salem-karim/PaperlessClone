@@ -1,4 +1,4 @@
-package at.technikum.restapi.service.exceptions;
+package at.technikum.restapi.service.exception;
 
 public class InvalidDocumentException extends RuntimeException {
     public InvalidDocumentException(final String message) {
