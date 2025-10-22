@@ -1,5 +1,6 @@
 package at.technikum.restapi.service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -30,7 +31,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final MinioService minioService;
 
     @Override
-    public DocumentSummaryDto upload(final MultipartFile file, final String title) {
+    public DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt) {
         if (file == null || file.isEmpty()) {
             throw new InvalidDocumentException("No file provided");
         }
@@ -53,6 +54,7 @@ public class DocumentServiceImpl implements DocumentService {
                     .objectKey(objectKey)
                     .originalFilename(file.getOriginalFilename())
                     .contentType(file.getContentType())
+                    .createdAt(createdAt)
                     .build();
 
             final var saved = repository.save(entity);

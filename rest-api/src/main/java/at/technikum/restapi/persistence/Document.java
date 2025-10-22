@@ -1,5 +1,6 @@
 package at.technikum.restapi.persistence;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import jakarta.persistence.*;
@@ -31,9 +32,8 @@ public class Document {
     // key or path in MinIO (e.g. "paperless-files/<uuid>-file.pdf")
     private String objectKey;
 
-    @Builder.Default
     @Column(updatable = false)
-    private java.time.Instant createdAt = java.time.Instant.now();
+    private Instant createdAt;
 
     @Lob
     private String ocrTextRef; // could be MinIO key or plain text

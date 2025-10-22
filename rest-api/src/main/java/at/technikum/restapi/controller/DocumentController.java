@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,11 +24,12 @@ public class DocumentController {
     private final DocumentService service;
 
     @PostMapping(consumes = "multipart/form-data")
-    public ResponseEntity<DocumentSummaryDto> upload(
-            @RequestParam("file") final MultipartFile file,
-            @RequestParam("title") final String title) {
+    public ResponseEntity<DocumentSummaryDto> uploadDocument(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("title") String title,
+            @RequestParam("createdAt") Long createdAtMillis) {
         log.info("Received upload request: Title={}", title);
-        final var savedDto = service.upload(file, title);
+        final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAtMillis));
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
     }
 

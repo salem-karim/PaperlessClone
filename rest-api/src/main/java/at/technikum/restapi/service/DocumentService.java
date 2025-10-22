@@ -5,12 +5,13 @@ import org.springframework.web.multipart.MultipartFile;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 public interface DocumentService {
 
-    DocumentSummaryDto upload(final MultipartFile file, final String title);
+    DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt);
 
     List<DocumentSummaryDto> getAll();
 
