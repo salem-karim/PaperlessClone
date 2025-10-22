@@ -1,5 +1,6 @@
 package at.technikum.restapi.service.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import lombok.Builder;
@@ -10,5 +11,6 @@ public record DocumentSummaryDto(
         String title,
         String originalFilename,
         Long fileSize,
-        String contentType) {
+        String contentType,
+        Instant createdAt) {
 }

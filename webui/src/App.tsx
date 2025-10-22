@@ -8,37 +8,6 @@ import { FaPlus } from "react-icons/fa6";
 import { DocumentList } from "./components/DocumentList";
 import { DeleteModal } from "./components/DeleteModal";
 
-const MOCK_DOCUMENTS: DocumentSummaryDto[] = [
-  {
-    id: "1",
-    title: "Annual Report 2024",
-    originalFileName: "annual_report_2024.pdf",
-    fileSize: 2456789, // bytes
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "Meeting Notes",
-    originalFileName: "meeting_notes.docx",
-    fileSize: 123456,
-    createdAt: new Date(Date.now() - 86400000).toISOString(), // yesterday
-  },
-  {
-    id: "3",
-    title: "Project Proposal",
-    originalFileName: "proposal.pdf",
-    fileSize: 987654,
-    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(), // 3 days ago
-  },
-  {
-    id: "4",
-    title: "Budget Plan",
-    originalFileName: "budget.xlsx",
-    fileSize: 567890,
-    createdAt: new Date(Date.now() - 7 * 86400000).toISOString(), // 1 week ago
-  },
-];
-
 export default function App() {
   const [documents, setDocuments] = useState<DocumentSummaryDto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,18 +15,16 @@ export default function App() {
 
   async function loadDocuments() {
     setLoading(true);
-    // comment out real API call during UI dev
-    // const [docs, docsError] = await tryCatch<DocumentSummaryDto[]>(getDocuments());
-    // setLoading(false);
-    // if (docsError) console.error(docsError.message);
-    // else if (docs) setDocuments(docs);
+    const [docs, docsError] =
+      await tryCatch<DocumentSummaryDto[]>(getDocuments());
+    setLoading(false);
 
-    // use mock data
-    setTimeout(() => {
-      setDocuments(MOCK_DOCUMENTS);
-      setLoading(false);
-    }, 500); // simulate network delay
+    console.log(docs);
+
+    if (docsError) console.error(docsError.message);
+    else if (docs) setDocuments(docs);
   }
+
   async function handleDelete(id: string) {
     setDeleteDocId(null);
     const [, error] = await tryCatch(deleteDocument(id));

@@ -55,6 +55,7 @@ public class DocumentServiceImpl implements DocumentService {
                     .originalFilename(file.getOriginalFilename())
                     .contentType(file.getContentType())
                     .createdAt(createdAt)
+                    .fileSize(file.getSize())
                     .build();
 
             final var saved = repository.save(entity);
@@ -121,11 +122,19 @@ public class DocumentServiceImpl implements DocumentService {
             if (!repository.existsById(id)) {
                 throw new DocumentNotFoundException(id);
             }
-            // TODO: delete from MinIO clean up ocr Text and other things
+
+            // fetch objectKey from your document entity
+            String objectKey = repository.findById(id)
+                    .map(Document::getObjectKey)
+                    .orElseThrow(() -> new DocumentNotFoundException(id));
+
+            minioService.delete(objectKey);
+
             repository.deleteById(id);
             log.info("Document with ID='{}' successfully deleted", id);
         } catch (final DataAccessException e) {
             throw new DocumentProcessingException("Error deleting document with ID=" + id, e);
         }
     }
+
 }
