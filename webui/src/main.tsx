@@ -14,7 +14,6 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/" element={<App />} />
         <Route path="/documents/new" element={<DocumentForm />} />
         <Route path="/documents/:id" element={<DocumentDetails />} />
-        <Route path="/documents/:id/edit" element={<DocumentForm />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
