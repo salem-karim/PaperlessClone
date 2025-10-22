@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { createDocument } from "../lib/documentService";
-import { tryCatch } from "../lib/try-catch";
+import { tryCatch } from "../lib/utils";
 
 export default function DocumentForm() {
   const [title, setTitle] = useState("");

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getDocumentById } from "../lib/documentService";
-import { tryCatch } from "../lib/try-catch";
+import { tryCatch } from "../lib/utils";
 import type { DocumentDto } from "../lib/types";
 import { FaHouse, FaPencil } from "react-icons/fa6";
 
