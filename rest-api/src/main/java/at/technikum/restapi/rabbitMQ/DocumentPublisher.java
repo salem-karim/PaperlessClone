@@ -16,7 +16,7 @@ public class DocumentPublisher {
     private final RabbitConfig rabbitConfig;
 
     public void publishDocumentCreated(final DocumentSummaryDto doc) {
-        log.info("Publishing document created event for: {}", doc.getTitle());
+        log.info("Publishing document created event for: {}", doc.title());
         rabbitTemplate.convertAndSend(
                 rabbitConfig.getExchange(),
                 rabbitConfig.getOcrRoutingKeyRequest(),

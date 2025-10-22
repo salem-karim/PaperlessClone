@@ -30,22 +30,36 @@ public class DocumentServiceImpl implements DocumentService {
     private final MinioService minioService;
 
     @Override
-    public DocumentSummaryDto upload(MultipartFile file, String title) {
-        try {
-            String objectKey = minioService.upload(file);
+    public DocumentSummaryDto upload(final MultipartFile file, final String title) {
+        if (file == null || file.isEmpty()) {
+            throw new InvalidDocumentException("No file provided");
+        }
 
-            var entity = Document.builder()
+        // Check MIME type
+        if (!"application/pdf".equals(file.getContentType())) {
+            throw new InvalidDocumentException("Only PDF files are allowed");
+        }
+
+        // Optional: double-check extension
+        String originalName = file.getOriginalFilename();
+        if (originalName == null || !originalName.toLowerCase().endsWith(".pdf")) {
+            throw new InvalidDocumentException("File must have .pdf extension");
+        }
+        try {
+            final String objectKey = minioService.upload(file);
+
+            final var entity = Document.builder()
                     .title(title)
                     .objectKey(objectKey)
                     .originalFilename(file.getOriginalFilename())
                     .contentType(file.getContentType())
                     .build();
 
-            var saved = repository.save(entity);
-            var dto = mapper.toSummaryDto(saved);
+            final var saved = repository.save(entity);
+            final var dto = mapper.toSummaryDto(saved);
             // publisher.publishDocumentCreated(dto);
             return dto;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             throw new DocumentProcessingException("Error uploading document: " + title, e);
         }
     }
@@ -63,14 +77,14 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public DocumentDetailDto getById(final UUID id) {
         try {
-            var entity = repository.findById(id)
+            final var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            String downloadUrl = minioService.generatePresignedUrl(entity.getObjectKey(), 15);
+            final String downloadUrl = minioService.generatePresignedUrl(entity.getObjectKey(), 15);
             // String ocrText = ocrTextService.getText(entity); // optional, can be
             // empty/null
             // TODO: change this to actually get the OCR Text
-            String ocrText = "Template needs change";
+            final String ocrText = "Template needs change";
 
             return mapper.toDetailDto(entity, downloadUrl, ocrText);
         } catch (final DataAccessException e) {
@@ -80,7 +94,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public DocumentSummaryDto update(final UUID id, final DocumentSummaryDto updateDoc) {
-        if (updateDoc.getId() != null && !updateDoc.getId().equals(id)) {
+        if (updateDoc.id() != null && !updateDoc.id().equals(id)) {
             throw new InvalidDocumentException("ID in path does not match ID in body");
         }
 
@@ -88,8 +102,8 @@ public class DocumentServiceImpl implements DocumentService {
             var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            if (updateDoc.getTitle() != null) {
-                entity.setTitle(updateDoc.getTitle());
+            if (updateDoc.title() != null) {
+                entity.setTitle(updateDoc.title());
             }
 
             entity = repository.save(entity);
@@ -105,6 +119,7 @@ public class DocumentServiceImpl implements DocumentService {
             if (!repository.existsById(id)) {
                 throw new DocumentNotFoundException(id);
             }
+            // TODO: delete from MinIO clean up ocr Text and other things
             repository.deleteById(id);
             log.info("Document with ID='{}' successfully deleted", id);
         } catch (final DataAccessException e) {

@@ -24,8 +24,8 @@ public class DocumentController {
 
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<DocumentSummaryDto> upload(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("title") String title) {
+            @RequestParam("file") final MultipartFile file,
+            @RequestParam("title") final String title) {
         log.info("Received upload request: Title={}", title);
         final var savedDto = service.upload(file, title);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
@@ -49,7 +49,7 @@ public class DocumentController {
     public ResponseEntity<DocumentSummaryDto> update(
             @PathVariable final UUID id,
             @RequestBody final DocumentSummaryDto updateDoc) {
-        log.info("Received update request: Title={}, ID={}", updateDoc.getTitle(), updateDoc.getId());
+        log.info("Received update request: Title={}, ID={}", updateDoc.title(), updateDoc.id());
         final var updatedDocument = service.update(id, updateDoc);
         return ResponseEntity.ok(updatedDocument);
     }
