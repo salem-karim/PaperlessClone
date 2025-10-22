@@ -35,6 +35,13 @@ public class GlobalExceptionHandler {
     }
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(DocumentUploadException.class)
+    public ErrorResponse handleUploadError(DocumentUploadException ex) {
+        log.error("Upload error: {}", ex.getMessage(), ex);
+        return new ErrorResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value());
+    }
+
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
     public ErrorResponse handleGenericError(Exception ex) {
         log.error("Unhandled exception caught in global handler", ex);

@@ -10,8 +10,7 @@ import java.util.UUID;
 
 public interface DocumentService {
 
-    // Existing methods
-    DocumentSummaryDto upload(final DocumentSummaryDto doc);
+    DocumentSummaryDto upload(final MultipartFile file, final String title);
 
     List<DocumentSummaryDto> getAll();
 
@@ -20,7 +19,4 @@ public interface DocumentService {
     DocumentSummaryDto update(final UUID id, final DocumentSummaryDto updateDoc);
 
     void delete(final UUID id);
-
-    // method for uploading actual files
-    DocumentSummaryDto upload(final MultipartFile file, final String title);
 }

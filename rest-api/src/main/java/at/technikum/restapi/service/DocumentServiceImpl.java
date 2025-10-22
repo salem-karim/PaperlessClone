@@ -43,28 +43,10 @@ public class DocumentServiceImpl implements DocumentService {
 
             var saved = repository.save(entity);
             var dto = mapper.toSummaryDto(saved);
-            publisher.publishDocumentCreated(dto);
+            // publisher.publishDocumentCreated(dto);
             return dto;
         } catch (Exception e) {
             throw new DocumentProcessingException("Error uploading document: " + title, e);
-        }
-    }
-
-    /**
-     * ✅ Legacy method (metadata only)
-     * Still available for backward compatibility.
-     */
-    @Override
-    public DocumentSummaryDto upload(final DocumentSummaryDto doc) {
-        try {
-            var saved = repository.save(mapper.toEntity(doc));
-            var dto = mapper.toSummaryDto(saved);
-            publisher.publishDocumentCreated(dto);
-            log.info("Document with Title='{}' successfully uploaded (metadata only)", doc.getTitle());
-            return dto;
-        } catch (final Exception e) {
-            log.error("Failed to upload metadata Title='{}': {}", doc.getTitle(), e.getMessage(), e);
-            throw new DocumentProcessingException("Error uploading document: " + doc.getTitle(), e);
         }
     }
 
