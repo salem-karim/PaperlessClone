@@ -32,18 +32,23 @@ services:
       SPRING_DATASOURCE_PASSWORD: secret
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
       RABBITMQ_HOST: rabbitmq
+      RABBITMQ_EXCHANGE: documents.operations
+      RABBITMQ_QUEUE: documents.processing
+      RABBITMQ_ROUTING_KEY_REQUEST: documents.ocr.request
+      RABBITMQ_ROUTING_KEY_RESPONSE: documents.ocr.response
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: paperless
       MINIO_SECRET_KEY: paperless123
-      MINIO_BUCKET: paperless-files
+      MINIO_DOCUMENTS_BUCKET: paperless-documents
+      MINIO_BUCKET_OCR_TEXT: paperless-ocr-text
     volumes:
-      - ./rest-api:/app # mount source code
-      - ~/.m2:/root/.m2 # cache Maven dependencies
+      - ./rest-api:/app
+      - ~/.m2:/root/.m2
     depends_on:
       postgres:
         condition: service_healthy
       rabbitmq:
-        condition: service_started
+        condition: service_healthy
       minio:
         condition: service_started
       # elasticsearch:
@@ -53,9 +58,32 @@ services:
 
   ocr-worker:
     build: ./ocr-worker
+    restart: unless-stopped
     environment:
+      # RabbitMQ Configuration
       RABBITMQ_HOST: rabbitmq
-      MINIO_BUCKET: paperless-ocr-text
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_EXCHANGE: documents.operations
+      RABBITMQ_QUEUE: documents.processing
+      RABBITMQ_RESPONSE_QUEUE: documents.processing.response
+      RABBITMQ_ROUTING_KEY_REQUEST: documents.ocr.request
+      RABBITMQ_ROUTING_KEY_RESPONSE: documents.ocr.response
+      
+      # MinIO Configuration
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: paperless
+      MINIO_SECRET_KEY: paperless123
+      MINIO_SECURE: "false"
+      MINIO_DOCUMENTS_BUCKET: paperless-documents
+      MINIO_OCR_TEXT_BUCKET: paperless-ocr-text
+      
+      # OCR Configuration
+      OCR_TEXT_SIZE_THRESHOLD: "102400"  # 100KB in bytes
+      
+      # Logging
+      LOG_LEVEL: INFO
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -109,6 +137,11 @@ services:
       - "9090:9090"
     networks:
       - paperless-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3

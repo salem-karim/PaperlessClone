@@ -43,7 +43,7 @@ class DocumentControllerTest {
         repository.deleteAll();
 
         // Mock the publisher so it doesn't actually try to send messages
-        doNothing().when(documentPublisher).publishDocumentCreated(any());
+        doNothing().when(documentPublisher).publishDocumentForOcr(any());
 
         savedDoc = repository.save(Document.builder()
                 .title("Test Title")
@@ -72,7 +72,7 @@ class DocumentControllerTest {
 
     @Test
     void testUploadDocument() throws Exception {
-        Document newDoc = Document.builder()
+        final Document newDoc = Document.builder()
                 .title("New Document")
                 .build();
 
@@ -85,7 +85,7 @@ class DocumentControllerTest {
 
     @Test
     void testUpdateDocument_found() throws Exception {
-        Document updated = Document.builder()
+        final Document updated = Document.builder()
                 .title("Updated Title")
                 .build();
 
@@ -98,7 +98,7 @@ class DocumentControllerTest {
 
     @Test
     void testUpdateDocument_badRequest() throws Exception {
-        Document updated = Document.builder()
+        final Document updated = Document.builder()
                 .id(UUID.randomUUID())
                 .title("Mismatched ID")
                 .build();
@@ -111,7 +111,7 @@ class DocumentControllerTest {
 
     @Test
     void testUpdateDocument_notFound() throws Exception {
-        Document updated = Document.builder()
+        final Document updated = Document.builder()
                 .id(UUID.randomUUID())
                 .title("Does Not Exist")
                 .build();

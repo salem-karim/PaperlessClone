@@ -20,4 +20,8 @@ public interface DocumentService {
     DocumentSummaryDto update(final UUID id, final DocumentSummaryDto updateDoc);
 
     void delete(final UUID id);
+
+    void updateOcrResult(final UUID documentId, final String ocrText, final String ocrTextObjectKey);
+
+    void markOcrAsFailed(final UUID documentId, final String error);
 }

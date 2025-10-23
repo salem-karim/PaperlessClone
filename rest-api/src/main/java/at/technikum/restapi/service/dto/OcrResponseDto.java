@@ -1,5 +1,6 @@
 package at.technikum.restapi.service.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -8,10 +9,17 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OcrResponseDto {
-    private String document_id;
+    @JsonProperty("document_id")
+    private String documentId;
+    
     private String status;
     private String worker;
-    private String ocr_text;
-    private String ocr_text_path;
+    
+    @JsonProperty("ocr_text")
+    private String ocrText;
+    
+    @JsonProperty("ocr_text_object_key")
+    private String ocrTextObjectKey;
+    
     private String error;
 }

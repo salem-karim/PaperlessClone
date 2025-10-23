@@ -42,25 +42,31 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         // Optional: double-check extension
-        String originalName = file.getOriginalFilename();
+        final String originalName = file.getOriginalFilename();
         if (originalName == null || !originalName.toLowerCase().endsWith(".pdf")) {
             throw new InvalidDocumentException("File must have .pdf extension");
         }
+
         try {
             final String objectKey = minioService.upload(file);
 
             final var entity = Document.builder()
                     .title(title)
-                    .objectKey(objectKey)
+                    .fileBucket("paperless-documents")
+                    .fileObjectKey(objectKey)
                     .originalFilename(file.getOriginalFilename())
                     .contentType(file.getContentType())
                     .createdAt(createdAt)
                     .fileSize(file.getSize())
+                    .ocrStatus(Document.OcrStatus.PENDING)
                     .build();
 
             final var saved = repository.save(entity);
             final var dto = mapper.toSummaryDto(saved);
-            // publisher.publishDocumentCreated(dto);
+
+            // Publish OCR request using the saved entity
+            publisher.publishDocumentForOcr(saved);
+
             return dto;
         } catch (final Exception e) {
             throw new DocumentProcessingException("Error uploading document: " + title, e);
@@ -83,11 +89,19 @@ public class DocumentServiceImpl implements DocumentService {
             final var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            final String downloadUrl = minioService.generatePresignedUrl(entity.getObjectKey(), 15);
-            // String ocrText = ocrTextService.getText(entity); // optional, can be
-            // empty/null
-            // TODO: change this to actually get the OCR Text
-            final String ocrText = "Template needs change";
+            final String downloadUrl = minioService.generatePresignedUrl(entity.getFileObjectKey(), 15);
+
+            // Get OCR text - either inline or from MinIO
+            String ocrText = entity.getOcrText();
+            if (ocrText == null && entity.getOcrTextObjectKey() != null) {
+                // OCR text is stored in MinIO, download it
+                try {
+                    ocrText = minioService.downloadOcrText(entity.getOcrTextObjectKey());
+                } catch (final Exception e) {
+                    log.warn("Failed to download OCR text for document {}: {}", id, e.getMessage());
+                    ocrText = null;
+                }
+            }
 
             return mapper.toDetailDto(entity, downloadUrl, ocrText);
         } catch (final DataAccessException e) {
@@ -119,16 +133,20 @@ public class DocumentServiceImpl implements DocumentService {
     @Override
     public void delete(final UUID id) {
         try {
-            if (!repository.existsById(id)) {
-                throw new DocumentNotFoundException(id);
-            }
-
-            // fetch objectKey from your document entity
-            String objectKey = repository.findById(id)
-                    .map(Document::getObjectKey)
+            final var document = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            minioService.delete(objectKey);
+            // Delete document file from MinIO
+            minioService.delete(document.getFileObjectKey());
+
+            // Delete OCR text from MinIO if it exists
+            if (document.getOcrTextObjectKey() != null) {
+                try {
+                    minioService.deleteOcrText(document.getOcrTextObjectKey());
+                } catch (final Exception e) {
+                    log.warn("Failed to delete OCR text for document {}: {}", id, e.getMessage());
+                }
+            }
 
             repository.deleteById(id);
             log.info("Document with ID='{}' successfully deleted", id);
@@ -137,4 +155,52 @@ public class DocumentServiceImpl implements DocumentService {
         }
     }
 
+    @Override
+    public void updateOcrResult(final UUID documentId, final String ocrText, final String ocrTextObjectKey) {
+        try {
+            final var document = repository.findById(documentId)
+                    .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+            document.setOcrStatus(Document.OcrStatus.COMPLETED);
+
+            if (ocrText != null) {
+                // Small text stored inline
+                document.setOcrText(ocrText);
+                document.setOcrTextObjectKey(null);
+                log.info("Updated document {} with inline OCR text ({} chars)",
+                        documentId, ocrText.length());
+            } else if (ocrTextObjectKey != null) {
+                // Large text stored in MinIO
+                document.setOcrText(null);
+                document.setOcrTextObjectKey(ocrTextObjectKey);
+                log.info("Updated document {} with OCR text reference: {}",
+                        documentId, ocrTextObjectKey);
+            }
+            repository.save(document);
+            log.info("Document {} OCR status updated to COMPLETED", documentId);
+        } catch (final DocumentNotFoundException e) {
+            throw e;
+        } catch (final Exception e) {
+            log.error("Failed to update OCR result for document {}: {}", documentId, e.getMessage());
+            throw new DocumentProcessingException("Error updating OCR result for document: " + documentId, e);
+        }
+    }
+
+    @Override
+    public void markOcrAsFailed(final UUID documentId, final String error) {
+        try {
+            final var document = repository.findById(documentId)
+                    .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+            document.setOcrStatus(Document.OcrStatus.FAILED);
+            repository.save(document);
+
+            log.error("Marked document {} as OCR FAILED: {}", documentId, error);
+        } catch (final DocumentNotFoundException e) {
+            throw e;
+        } catch (final Exception e) {
+            log.error("Failed to mark document {} as failed: {}", documentId, e.getMessage());
+            throw new DocumentProcessingException("Error marking document as failed: " + documentId, e);
+        }
+    }
 }

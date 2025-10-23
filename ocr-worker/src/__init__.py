@@ -1,16 +1,5 @@
-"""OCR Worker package"""
+"""OCR Worker Package"""
 
-from .config import Config
-from .models import DocumentDto, OcrResponse
-from .rabbitmq_client import RabbitMQClient
-from .ocr_service import OcrService
-from .message_handler import MessageHandler
+from .models import OcrRequestDto, OcrResponseDto
 
-__all__ = [
-    "Config",
-    "DocumentDto",
-    "OcrResponse",
-    "RabbitMQClient",
-    "OcrService",
-    "MessageHandler",
-]
+__all__ = ["OcrRequestDto", "OcrResponseDto"]

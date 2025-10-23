@@ -25,9 +25,9 @@ public class DocumentController {
 
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<DocumentSummaryDto> uploadDocument(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("title") String title,
-            @RequestParam("createdAt") Long createdAtMillis) {
+            @RequestParam("file") final MultipartFile file,
+            @RequestParam("title") final String title,
+            @RequestParam("createdAt") final Long createdAtMillis) {
         log.info("Received upload request: Title={}", title);
         final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAtMillis));
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
