@@ -1,4 +1,4 @@
-package at.technikum.restapi.service.exceptions;
+package at.technikum.restapi.service.exception;
 
 import java.util.UUID;
 

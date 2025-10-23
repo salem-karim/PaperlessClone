@@ -1,27 +1,28 @@
 package at.technikum.restapi.service.mapper;
 
-import org.springframework.stereotype.Component;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-import at.technikum.restapi.persistence.DocumentEntity;
-import at.technikum.restapi.service.DocumentDto;
-import lombok.NoArgsConstructor;
+import at.technikum.restapi.persistence.Document;
+import at.technikum.restapi.service.dto.DocumentDetailDto;
+import at.technikum.restapi.service.dto.DocumentSummaryDto;
+import at.technikum.restapi.service.dto.OcrRequestDto;
 
-@NoArgsConstructor
-@Component
-public class DocumentMapper implements Mapper<DocumentEntity, DocumentDto> {
-    @Override
-    public DocumentDto toDto(final DocumentEntity entity) {
-        return DocumentDto.builder()
-                .id(entity.getId())
-                .title(entity.getTitle())
-                .build();
-    }
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+public interface DocumentMapper {
 
-    @Override
-    public DocumentEntity toEntity(final DocumentDto dto) {
-        return DocumentEntity.builder()
-                .id(dto.getId())
-                .title(dto.getTitle())
-                .build();
-    }
+    DocumentSummaryDto toSummaryDto(Document entity);
+
+    @Mapping(target = "downloadUrl", source = "downloadUrl")
+    @Mapping(target = "ocrText", source = "ocrText")
+    @Mapping(target = "ocrTextDownloadUrl", ignore = true)
+    DocumentDetailDto toDetailDto(Document entity, String downloadUrl, String ocrText);
+
+    Document toEntity(DocumentSummaryDto dto);
+
+    Document toEntity(DocumentDetailDto dto);
+
+    @Mapping(target = "documentId", source = "id")
+    OcrRequestDto toOcrRequestDto(Document entity);
 }

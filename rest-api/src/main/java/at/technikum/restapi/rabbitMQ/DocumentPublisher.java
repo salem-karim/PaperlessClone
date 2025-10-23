@@ -1,10 +1,13 @@
 package at.technikum.restapi.rabbitMQ;
 
-import at.technikum.restapi.service.DocumentDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+
+import at.technikum.restapi.persistence.Document;
+import at.technikum.restapi.service.dto.OcrRequestDto;
+import at.technikum.restapi.service.mapper.DocumentMapper;
 
 @Slf4j
 @Component
@@ -13,13 +16,22 @@ public class DocumentPublisher {
 
     private final RabbitTemplate rabbitTemplate;
     private final RabbitConfig rabbitConfig;
+    private final DocumentMapper mapper;
 
-    public void publishDocumentCreated(final DocumentDto doc) {
-        log.info("Publishing document created event for: {}", doc.getTitle());
+    public void publishDocumentForOcr(final Document document) {
+        log.info("Publishing OCR request for document: {} (ID: {})",
+                document.getTitle(), document.getId());
+
+        // Use mapper to convert entity to OCR request DTO
+        final OcrRequestDto ocrRequest = mapper.toOcrRequestDto(document);
+
+        log.debug("OCR Request payload: {}", ocrRequest);
+
         rabbitTemplate.convertAndSend(
-            rabbitConfig.getExchange(), 
-            rabbitConfig.getOcrRoutingKeyRequest(), 
-            doc
-        );
+                rabbitConfig.getExchange(),
+                rabbitConfig.getOcrRoutingKeyRequest(),
+                ocrRequest);
+
+        log.info("Published OCR request for document ID: {}", document.getId());
     }
 }

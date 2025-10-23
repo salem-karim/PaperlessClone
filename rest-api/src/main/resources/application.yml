@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: 10GB
+      max-request-size: 10GB
   application:
     name: REST-API
   jpa:
