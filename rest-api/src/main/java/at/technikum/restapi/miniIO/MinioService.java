@@ -69,6 +69,20 @@ public class MinioService {
         }
     }
 
+    public InputStream downloadFile(final String objectKey) {
+        try {
+            log.info("Downloading file: {}/{}", bucketName, objectKey);
+            return minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .build());
+        } catch (final Exception e) {
+            throw new DocumentProcessingException(
+                    "Failed to download file from MinIO: " + objectKey, e);
+        }
+    }
+
     public void delete(final String objectKey) {
         try {
             minioClient.removeObject(

@@ -91,12 +91,12 @@ public class DocumentServiceImpl implements DocumentService {
             final var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            final String downloadUrl = minioService.generatePresignedUrl(entity.getFileObjectKey(), 15);
+            // Always use our API endpoint for downloads
+            final String downloadUrl = "/api/v1/documents/" + id + "/download";
 
             // Get OCR text - either inline or from MinIO
             String ocrText = entity.getOcrText();
             if (ocrText == null && entity.getOcrTextObjectKey() != null) {
-                // OCR text is stored in MinIO, download it
                 try {
                     ocrText = minioService.downloadOcrText(entity.getOcrTextObjectKey());
                 } catch (final Exception e) {

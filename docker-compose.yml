@@ -70,7 +70,7 @@ services:
       RABBITMQ_RESPONSE_QUEUE: documents.processing.response
       RABBITMQ_ROUTING_KEY_REQUEST: documents.ocr.request
       RABBITMQ_ROUTING_KEY_RESPONSE: documents.ocr.response
-      
+
       # MinIO Configuration
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: paperless
@@ -78,10 +78,10 @@ services:
       MINIO_SECURE: "false"
       MINIO_DOCUMENTS_BUCKET: paperless-documents
       MINIO_OCR_TEXT_BUCKET: paperless-ocr-text
-      
+
       # OCR Configuration
-      OCR_TEXT_SIZE_THRESHOLD: "102400"  # 100KB in bytes
-      
+      OCR_TEXT_SIZE_THRESHOLD: "102400" # 100KB in bytes
+
       # Logging
       LOG_LEVEL: INFO
     depends_on:
@@ -130,6 +130,7 @@ services:
     environment:
       MINIO_ROOT_USER: paperless
       MINIO_ROOT_PASSWORD: paperless123
+      MINIO_DOMAIN: localhost:9000
     volumes:
       - minio-data:/data
     ports:

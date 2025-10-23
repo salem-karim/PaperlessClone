@@ -5,6 +5,7 @@ import {
   getOcrStatus,
   updateDocument,
   deleteDocument,
+  downloadDocument,
 } from "../lib/documentService";
 import { formatFileSize, tryCatch } from "../lib/utils";
 import type { DocumentDetailDto } from "../lib/types";
@@ -115,6 +116,17 @@ export default function DocumentDetails() {
 
     // Navigate to home after successful deletion
     navigate("/");
+  };
+
+  const handleDownload = async () => {
+    if (!document) return;
+
+    try {
+      await downloadDocument(document.id, document.originalFilename);
+    } catch (err) {
+      console.error("Failed to download document:", err);
+      alert("Failed to download document");
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -255,16 +267,12 @@ export default function DocumentDetails() {
       )}
 
       {/* Download Button */}
-      {document.downloadUrl && (
-        <a
-          href={document.downloadUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition text-center"
-        >
-          Download Original PDF
-        </a>
-      )}
+      <button
+        onClick={handleDownload}
+        className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition text-center w-full"
+      >
+        Download Original PDF
+      </button>
 
       {/* Document Metadata */}
       <div className="flex justify-between items-center text-sm">

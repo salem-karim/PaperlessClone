@@ -13,6 +13,8 @@ public record DocumentDetailDto(
         String originalFilename,
         Long fileSize,
         String contentType,
+        String fileBucket,          // Added - needed for download
+        String fileObjectKey,       // Added - needed for download
         Instant createdAt,
         String downloadUrl,         // Presigned URL to download original file from MinIO
         OcrStatus ocrStatus,
