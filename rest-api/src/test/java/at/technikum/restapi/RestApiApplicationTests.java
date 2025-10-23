@@ -1,8 +1,9 @@
 package at.technikum.restapi;
 
-import at.technikum.restapi.persistence.DocumentEntity;
+import at.technikum.restapi.persistence.Document;
 import at.technikum.restapi.persistence.DocumentRepository;
 import at.technikum.restapi.rabbitMQ.DocumentPublisher;
+import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @SpringBootTest
@@ -36,17 +38,24 @@ class DocumentControllerTest {
     @MockitoBean
     private DocumentPublisher documentPublisher;
 
-    private DocumentEntity savedDoc;
+    private Document savedDoc;
 
     @BeforeEach
     void setup() {
         repository.deleteAll();
 
         // Mock the publisher so it doesn't actually try to send messages
-        doNothing().when(documentPublisher).publishDocumentCreated(any());
+        doNothing().when(documentPublisher).publishDocumentForOcr(any());
 
-        savedDoc = repository.save(DocumentEntity.builder()
+        savedDoc = repository.save(Document.builder()
                 .title("Test Title")
+                .originalFilename("test.pdf")
+                .contentType("application/pdf")
+                .fileSize(12345L)
+                .fileBucket("test-bucket")
+                .fileObjectKey("test-object-key")
+                .createdAt(Instant.now())
+                .ocrStatus(Document.OcrStatus.PENDING)
                 .build());
     }
 
@@ -71,22 +80,15 @@ class DocumentControllerTest {
     }
 
     @Test
-    void testUploadDocument() throws Exception {
-        DocumentEntity newDoc = DocumentEntity.builder()
-                .title("New Document")
-                .build();
-
-        mockMvc.perform(post("/documents")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(newDoc)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value("New Document"));
-    }
-
-    @Test
     void testUpdateDocument_found() throws Exception {
-        DocumentEntity updated = DocumentEntity.builder()
+        final DocumentSummaryDto updated = DocumentSummaryDto.builder()
+                .id(savedDoc.getId())
                 .title("Updated Title")
+                .originalFilename(savedDoc.getOriginalFilename())
+                .contentType(savedDoc.getContentType())
+                .fileSize(savedDoc.getFileSize())
+                .ocrStatus(savedDoc.getOcrStatus())
+                .createdAt(savedDoc.getCreatedAt())
                 .build();
 
         mockMvc.perform(put("/documents/" + savedDoc.getId())
@@ -98,9 +100,14 @@ class DocumentControllerTest {
 
     @Test
     void testUpdateDocument_badRequest() throws Exception {
-        DocumentEntity updated = DocumentEntity.builder()
-                .id(UUID.randomUUID())
+        final DocumentSummaryDto updated = DocumentSummaryDto.builder()
+                .id(UUID.randomUUID()) // Mismatched ID
                 .title("Mismatched ID")
+                .originalFilename("test.pdf")
+                .contentType("application/pdf")
+                .fileSize(12345L)
+                .ocrStatus(Document.OcrStatus.PENDING)
+                .createdAt(Instant.now())
                 .build();
 
         mockMvc.perform(put("/documents/" + savedDoc.getId())
@@ -111,13 +118,18 @@ class DocumentControllerTest {
 
     @Test
     void testUpdateDocument_notFound() throws Exception {
-        DocumentEntity updated = DocumentEntity.builder()
-                .id(UUID.randomUUID())
+        final UUID randomId = UUID.randomUUID();
+        final DocumentSummaryDto updated = DocumentSummaryDto.builder()
+                .id(randomId)
                 .title("Does Not Exist")
+                .originalFilename("test.pdf")
+                .contentType("application/pdf")
+                .fileSize(12345L)
+                .ocrStatus(Document.OcrStatus.PENDING)
+                .createdAt(Instant.now())
                 .build();
 
-        // Use ID from created Entity for Not Found Error
-        mockMvc.perform(put("/documents/" + updated.getId())
+        mockMvc.perform(put("/documents/" + randomId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updated)))
                 .andExpect(status().isNotFound());

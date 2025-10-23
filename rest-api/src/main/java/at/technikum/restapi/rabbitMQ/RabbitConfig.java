@@ -18,7 +18,6 @@ import lombok.Getter;
 @Configuration
 public class RabbitConfig {
 
-    // Remove static - @Value doesn't work with static fields
     @Value("${EXCHANGE:documents.operations}")
     private String exchange;
 
@@ -54,13 +53,13 @@ public class RabbitConfig {
 
     // Binding for requests (REST API -> OCR Worker)
     @Bean
-    Binding requestBinding(Queue documentsQueue, TopicExchange documentsExchange) {
+    Binding requestBinding(final Queue documentsQueue, final TopicExchange documentsExchange) {
         return BindingBuilder.bind(documentsQueue).to(documentsExchange).with(ocrRoutingKeyRequest);
     }
 
     // Binding for responses (OCR Worker -> REST API)
     @Bean
-    Binding responseBinding(Queue responseQueue, TopicExchange documentsExchange) {
+    Binding responseBinding(final Queue responseQueue, final TopicExchange documentsExchange) {
         return BindingBuilder.bind(responseQueue).to(documentsExchange).with(ocrRoutingKeyResponse);
     }
 
@@ -75,7 +74,8 @@ public class RabbitConfig {
     }
 
     @Bean
-    RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, Jackson2JsonMessageConverter messageConverter) {
+    RabbitTemplate rabbitTemplate(final ConnectionFactory connectionFactory,
+            final Jackson2JsonMessageConverter messageConverter) {
         final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(messageConverter);
         return rabbitTemplate;

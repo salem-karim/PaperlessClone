@@ -3,20 +3,27 @@
 from typing import TypedDict, Optional
 
 
-class DocumentDto(TypedDict, total=False):
-    """Incoming document message structure"""
-
-    id: str
+class OcrRequestDto(TypedDict, total=False):
+    """Incoming OCR request from RabbitMQ"""
+    document_id: str
     title: str
-    file_path: str
+    original_filename: str
+    content_type: str
+    file_size: int
+    file_bucket: str
+    file_object_key: str
 
 
-class OcrResponse(TypedDict, total=False):
-    """Response message structure"""
-
+class OcrResponseDto(TypedDict, total=False):
+    """Response sent back to RabbitMQ"""
     document_id: str
     status: str  # "completed" or "failed"
     worker: str  # "ocr"
+    
+    # Option 1: Small text (< 100KB)
     ocr_text: Optional[str]
-    ocr_text_path: Optional[str]
+    
+    # Option 2: Large text stored in MinIO
+    ocr_text_object_key: Optional[str]  # Just the key, bucket is implied
+    
     error: Optional[str]
