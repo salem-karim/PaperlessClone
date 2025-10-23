@@ -4,6 +4,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
+import at.technikum.restapi.service.dto.OcrStatusDto;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,6 +17,8 @@ public interface DocumentService {
     List<DocumentSummaryDto> getAll();
 
     DocumentDetailDto getById(final UUID id);
+
+    OcrStatusDto getOcrStatus(final UUID id);
 
     DocumentSummaryDto update(final UUID id, final DocumentSummaryDto updateDoc);
 

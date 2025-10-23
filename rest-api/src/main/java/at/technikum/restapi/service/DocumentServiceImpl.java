@@ -14,9 +14,11 @@ import at.technikum.restapi.persistence.DocumentRepository;
 import at.technikum.restapi.rabbitMQ.DocumentPublisher;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
-import at.technikum.restapi.service.exception.*;
+import at.technikum.restapi.service.dto.OcrStatusDto;
+import at.technikum.restapi.service.exception.DocumentNotFoundException;
+import at.technikum.restapi.service.exception.DocumentProcessingException;
+import at.technikum.restapi.service.exception.InvalidDocumentException;
 import at.technikum.restapi.service.mapper.DocumentMapper;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -106,6 +108,21 @@ public class DocumentServiceImpl implements DocumentService {
             return mapper.toDetailDto(entity, downloadUrl, ocrText);
         } catch (final DataAccessException e) {
             throw new DocumentProcessingException("Error accessing document with ID=" + id, e);
+        }
+    }
+
+    @Override
+    public OcrStatusDto getOcrStatus(final UUID id) {
+        try {
+            final var entity = repository.findById(id)
+                    .orElseThrow(() -> new DocumentNotFoundException(id));
+
+            return new OcrStatusDto(
+                    entity.getId(),
+                    entity.getOcrStatus(),
+                    entity.getOcrError());
+        } catch (final DataAccessException e) {
+            throw new DocumentProcessingException("Error fetching OCR status for ID=" + id, e);
         }
     }
 

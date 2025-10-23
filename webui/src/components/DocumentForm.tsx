@@ -20,7 +20,6 @@ export default function DocumentForm() {
       setError("Only PDF files are allowed.");
       return;
     }
-    console.log(file);
     setLoading(true);
     const [, err] = await tryCatch(createDocument({ title, file }));
     setLoading(false);

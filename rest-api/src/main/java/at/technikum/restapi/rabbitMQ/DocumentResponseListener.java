@@ -26,9 +26,8 @@ public class DocumentResponseListener {
             final UUID documentId = UUID.fromString(response.getDocumentId());
 
             if ("completed".equals(response.getStatus())) {
-                final String ocrText = response.getOcrText();  // ✅ Now using camelCase getter
-                final String ocrTextObjectKey = response.getOcrTextObjectKey();  // ✅ Now using camelCase getter
-
+                final String ocrText = response.getOcrText();
+                final String ocrTextObjectKey = response.getOcrTextObjectKey();
                 if (ocrText != null && !ocrText.isEmpty()) {
                     // Small text sent inline
                     log.info("OCR completed successfully with inline text ({} chars)", ocrText.length());

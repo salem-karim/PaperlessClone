@@ -19,8 +19,6 @@ export default function App() {
       await tryCatch<DocumentSummaryDto[]>(getDocuments());
     setLoading(false);
 
-    console.log(docs);
-
     if (docsError) console.error(docsError.message);
     else if (docs) setDocuments(docs);
   }

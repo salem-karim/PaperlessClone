@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import at.technikum.restapi.service.DocumentService;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
+import at.technikum.restapi.service.dto.OcrStatusDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +46,13 @@ public class DocumentController {
         log.debug("Fetching document with ID={}", id);
         final var document = service.getById(id);
         return ResponseEntity.ok(document);
+    }
+
+    @GetMapping("/{id}/status")
+    public ResponseEntity<OcrStatusDto> getOcrStatus(@PathVariable final UUID id) {
+        log.debug("Fetching OCR status for document ID={}", id);
+        final var statusDto = service.getOcrStatus(id);
+        return ResponseEntity.ok(statusDto);
     }
 
     @PutMapping("/{id}")
