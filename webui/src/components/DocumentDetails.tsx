@@ -199,6 +199,13 @@ export default function DocumentDetails() {
         </div>
 
         <div className="flex flex-col items-end gap-2">
+          <button
+            onClick={() => navigate("/")}
+            className="p-2 bg-gray-300 dark:bg-gray-700 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition"
+            title="Home"
+          >
+            <FaHouse />
+          </button>
           <div className="text-sm text-gray-500 dark:text-gray-400 text-right">
             <div>
               <span className="font-semibold">Created:</span>{" "}
@@ -211,13 +218,6 @@ export default function DocumentDetails() {
               </div>
             )}
           </div>
-          <button
-            onClick={() => navigate("/")}
-            className="p-2 bg-gray-300 dark:bg-gray-700 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition"
-            title="Home"
-          >
-            <FaHouse />
-          </button>
         </div>
       </div>
 
