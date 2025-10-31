@@ -2,7 +2,7 @@ package at.technikum.restapi;
 
 import at.technikum.restapi.persistence.Document;
 import at.technikum.restapi.persistence.DocumentRepository;
-import at.technikum.restapi.rabbitMQ.DocumentPublisher;
+import at.technikum.restapi.rabbitMQ.DocumentPublisherImpl;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +36,7 @@ class DocumentControllerTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private DocumentPublisher documentPublisher;
+    private DocumentPublisherImpl documentPublisher;
 
     private Document savedDoc;
 
