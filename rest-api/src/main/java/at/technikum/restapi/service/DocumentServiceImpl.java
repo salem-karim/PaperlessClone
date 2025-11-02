@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import at.technikum.restapi.miniIO.MinioService;
 import at.technikum.restapi.persistence.Document;
 import at.technikum.restapi.persistence.DocumentRepository;
-import at.technikum.restapi.rabbitMQ.DocumentPublisher;
+import at.technikum.restapi.rabbitMQ.DocumentPublisherImpl;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.OcrStatusDto;
@@ -29,7 +29,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository repository;
     private final DocumentMapper mapper;
-    private final DocumentPublisher publisher;
+    private final DocumentPublisherImpl publisher;
     private final MinioService minioService;
 
     @Override

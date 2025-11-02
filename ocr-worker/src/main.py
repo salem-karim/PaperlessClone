@@ -23,6 +23,8 @@ def main():
     """Initialize and start the OCR worker"""
     logger.info("Starting OCR Worker Service")
 
+    rabbitmq_client = None
+
     try:
         # Initialize services
         logger.info("Initializing MinIO client...")
@@ -48,7 +50,7 @@ def main():
     except KeyboardInterrupt:
         logger.info("Shutting down OCR worker (KeyboardInterrupt)")
         if rabbitmq_client:
-            rabbitmq_client.close()
+            rabbitmq_client.stop()
     except Exception as e:
         logger.error(f"Fatal error in OCR worker: {e}", exc_info=True)
         sys.exit(1)

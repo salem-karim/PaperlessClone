@@ -7,6 +7,8 @@ from typing import Callable, Optional
 import pika
 from pika.adapters.blocking_connection import BlockingChannel, BlockingConnection
 
+from src.models import OcrResponseDto
+
 from .config import Config
 
 logger = getLogger(__name__)
@@ -84,7 +86,7 @@ class RabbitMQClient:
             logger.info("Received shutdown signal, stopping...")
             self.stop()
 
-    def publish_response(self, response: dict) -> None:
+    def publish_response(self, response: OcrResponseDto) -> None:
         """Publish a response message"""
         if self.channel is None:
             logger.error("Cannot publish: not connected")

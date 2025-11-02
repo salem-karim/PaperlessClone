@@ -23,21 +23,22 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
 @RequiredArgsConstructor
+@Component
 public class MinioService {
 
     private final MinioClient minioClient;
 
-    @Value("${MINIO_DOCUMENTS_BUCKET:paperless-documents}")
+    @Value("${minio.documents-bucket:paperless-documents}")
     private String bucketName;
 
-    @Value("${MINIO_OCR_TEXT_BUCKET:paperless-ocr-text}")
+    @Value("${minio.ocr-text-bucket:paperless-ocr-text}")
     private String ocrTextBucketName;
 
     private void ensureBucket(final String bucket) {
         try {
-            final boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucket).build());
+            final boolean exists = minioClient.bucketExists(
+                    BucketExistsArgs.builder().bucket(bucket).build());
             if (!exists) {
                 minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
                 log.info("Created bucket '{}'", bucket);
@@ -150,29 +151,44 @@ public class MinioService {
         }
     }
 
+    /**
+     * Generates a presigned URL using the external client
+     * This ensures the signature is calculated with the correct endpoint
+     */
     public String generatePresignedUrl(final String objectKey, final int expiryMinutes) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            String presignedUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
                             .object(objectKey)
                             .expiry(expiryMinutes * 60)
                             .build());
+
+            if (!presignedUrl.contains("localhost:9000")) {
+                presignedUrl = presignedUrl.replace("http://minio:9000/", "http://localhost:8000/minio/");
+            }
+
+            log.debug("Generated presigned URL for {}: {}", objectKey, presignedUrl);
+            return presignedUrl;
         } catch (final Exception e) {
+            log.error("Failed to generate presigned URL for {}: {}", objectKey, e.getMessage());
             throw new DocumentUploadException("Failed to generate presigned URL for " + objectKey, e);
         }
     }
 
     public String generateOcrTextPresignedUrl(final String objectKey, final int expiryMinutes) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            final String presignedUrl = minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(ocrTextBucketName)
                             .object(objectKey)
                             .expiry(expiryMinutes * 60)
                             .build());
+
+            log.debug("Generated presigned OCR text URL for {}: {}", objectKey, presignedUrl);
+            return presignedUrl;
         } catch (final Exception e) {
             throw new DocumentUploadException("Failed to generate presigned URL for OCR text: " + objectKey, e);
         }
