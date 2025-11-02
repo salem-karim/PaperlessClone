@@ -2,7 +2,7 @@
 
 import json
 import logging
-from typing import Union, Any
+from typing import Any
 
 from pika.adapters.blocking_connection import BlockingChannel
 
@@ -34,17 +34,17 @@ class MessageHandler:
     def handle_message(
         self, channel: BlockingChannel, method: Any, properties: Any, body: bytes
     ) -> None:
-        """Process incoming OCR requests"""
         logger.info(f"Received message with routing key: {method.routing_key}")
 
         try:
             message = self._parse_message(body)
-            logger.info(
-                f"Received OCR request for document: {message.get('document_id')}"
-            )
 
             if isinstance(message, dict):
-                self._process_document(message)
+                request: OcrRequestDto = message  # type: ignore[assignment]
+                logger.info(
+                    f"Received OCR request for document: {request.get('document_id')}"
+                )
+                self._process_document(request)
                 channel.basic_ack(delivery_tag=method.delivery_tag)
                 logger.info("Message acknowledged")
             else:
@@ -56,9 +56,9 @@ class MessageHandler:
             channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
         except Exception as e:
             logger.error(f"Error processing message: {e}", exc_info=True)
-            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
-    def _parse_message(self, body: bytes) -> Union[dict, str]:
+    def _parse_message(self, body: bytes) -> OcrRequestDto | str:
         """Parse message body to dict or string"""
         try:
             return json.loads(body)
