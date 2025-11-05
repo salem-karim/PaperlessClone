@@ -44,3 +44,6 @@ class Config:
 
     # Logging
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+
+    # Google Gemini
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")

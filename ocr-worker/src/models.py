@@ -25,5 +25,7 @@ class OcrResponseDto(TypedDict, total=False):
     
     # Option 2: Large text stored in MinIO
     ocr_text_object_key: Optional[str]  # Just the key, bucket is implied
+
+    summary_text: Optional[str]
     
     error: Optional[str]

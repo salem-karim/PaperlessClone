@@ -11,6 +11,7 @@ from .ocr_service import OcrService
 from .rabbitmq_client import RabbitMQClient
 from .minio_client import MinioClient
 from .models import OcrRequestDto, OcrResponseDto
+from .genAi_service import GenAIService
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +27,12 @@ class MessageHandler:
         rabbitmq_client: RabbitMQClient,
         ocr_service: OcrService,
         minio_client: MinioClient,
+        genAi_service: GenAIService,
     ):
         self.rabbitmq_client = rabbitmq_client
         self.ocr_service = ocr_service
         self.minio_client = minio_client
+        self.genAi_service = genAi_service
 
     def handle_message(
         self, channel: BlockingChannel, method: Any, properties: Any, body: bytes
@@ -104,6 +107,9 @@ class MessageHandler:
                 logger.warning(f"No text extracted from document {doc_id}")
                 ocr_text = "[No text could be extracted from this document]"
 
+            logger.info(f"Generating summary for document {doc_id} using Google Gemini")
+            summary_text = self.genai_service.summarize_text(ocr_text)
+
             # Determine if text should be stored inline or in MinIO
             ocr_text_size = len(ocr_text.encode("utf-8"))
 
@@ -113,7 +119,7 @@ class MessageHandler:
                     f"OCR text size ({ocr_text_size} bytes) below threshold "
                     f"({OCR_TEXT_SIZE_THRESHOLD} bytes). Sending inline."
                 )
-                self._send_response(doc_id, "completed", ocr_text=ocr_text)
+                self._send_response(doc_id, "completed", ocr_text=ocr_text, summary_text=summary_text)
             else:
                 # Large text: store in MinIO and send reference
                 logger.info(
@@ -127,7 +133,7 @@ class MessageHandler:
                 self.minio_client.upload_text(ocr_bucket, ocr_object_key, ocr_text)
 
                 self._send_response(
-                    doc_id, "completed", ocr_text_object_key=ocr_object_key
+                    doc_id, "completed", ocr_text_object_key=ocr_object_key, summary_text=summary_text
                 )
 
             logger.info(f"Completed OCR processing for document {doc_id}")
@@ -151,6 +157,7 @@ class MessageHandler:
         status: str,
         ocr_text: str | None = None,
         ocr_text_object_key: str | None = None,
+        summary_text: str | None = None,
         error: str | None = None,
     ) -> None:
         """Send processing result back to REST API"""
@@ -164,6 +171,8 @@ class MessageHandler:
             response["ocr_text"] = ocr_text
         if ocr_text_object_key is not None:
             response["ocr_text_object_key"] = ocr_text_object_key
+        if summary_text is not None:
+            response["summary_text"] = summary_text
         if error is not None:
             response["error"] = error
 

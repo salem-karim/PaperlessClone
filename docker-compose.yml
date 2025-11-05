@@ -81,6 +81,7 @@ services:
       MINIO_OCR_TEXT_BUCKET: paperless-ocr-text
       OCR_TEXT_SIZE_THRESHOLD: "102400"
       LOG_LEVEL: INFO
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
     depends_on:
       rabbitmq:
         condition: service_healthy

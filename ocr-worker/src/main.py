@@ -33,11 +33,14 @@ def main():
         logger.info("Initializing OCR service...")
         ocr_service = OcrService()
 
+        logger.info("Initializing Google Gemini service...")
+        genAi_service = GenAIService()
+
         logger.info("Initializing RabbitMQ client...")
         rabbitmq_client = RabbitMQClient()
 
         logger.info("Initializing message handler...")
-        message_handler = MessageHandler(rabbitmq_client, ocr_service, minio_client)
+        message_handler = MessageHandler(rabbitmq_client, ocr_service, minio_client, genAi_service)
 
         # Connect to RabbitMQ
         logger.info("Connecting to RabbitMQ...")
