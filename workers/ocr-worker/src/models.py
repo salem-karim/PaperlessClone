@@ -1,4 +1,4 @@
-"""Data models and DTOs"""
+"""OCR Worker Data Models and DTOs"""
 
 from typing import TypedDict, Optional
 
@@ -15,7 +15,7 @@ class OcrRequestDto(TypedDict, total=False):
 
 
 class OcrResponseDto(TypedDict, total=False):
-    """Response sent back to RabbitMQ"""
+    """Response sent back to RabbitMQ after OCR processing"""
     document_id: str
     status: str  # "completed" or "failed"
     worker: str  # "ocr"
@@ -25,7 +25,5 @@ class OcrResponseDto(TypedDict, total=False):
     
     # Option 2: Large text stored in MinIO
     ocr_text_object_key: Optional[str]  # Just the key, bucket is implied
-
-    summary_text: Optional[str]
     
     error: Optional[str]

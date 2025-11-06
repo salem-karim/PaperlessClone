@@ -17,7 +17,7 @@ public class DocumentListenerImpl implements DocumentListener {
 
     private final DocumentService documentService;
 
-    @RabbitListener(queues = "#{rabbitConfig.responseQueue}")
+    @RabbitListener(queues = "#{rabbitConfig.ocrResponseQueue}")
     public void handleOcrResponse(final OcrResponseDto response) {
         log.info("Received OCR response for document: {}", response.getDocumentId());
         log.info("Status: {}, Worker: {}", response.getStatus(), response.getWorker());

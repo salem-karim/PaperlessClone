@@ -1,3 +1,26 @@
+# Shared environment variable definitions
+x-rabbitmq-common: &rabbitmq-common
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: 5672
+  RABBITMQ_USER: guest
+  RABBITMQ_PASSWORD: guest
+  RABBITMQ_EXCHANGE: documents.operations
+
+x-minio-common: &minio-common
+  MINIO_ACCESS_KEY: paperless
+  MINIO_SECRET_KEY: paperless123
+  MINIO_DOCUMENTS_BUCKET: paperless-documents
+
+x-minio-workers: &minio-workers
+  <<: *minio-common
+  MINIO_ENDPOINT: minio:9000
+  MINIO_SECURE: "false"
+  MINIO_OCR_TEXT_BUCKET: paperless-ocr-text
+
+x-worker-common: &worker-common
+  LOG_LEVEL: INFO
+  GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+
 services:
   nginx:
     image: nginx:stable
@@ -27,20 +50,28 @@ services:
     ports:
       - "8080:8080"
     environment:
+      # Database
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/paperless
       SPRING_DATASOURCE_USERNAME: paperless
       SPRING_DATASOURCE_PASSWORD: secret
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_EXCHANGE: documents.operations
-      RABBITMQ_QUEUE: documents.processing
-      RABBITMQ_ROUTING_KEY_REQUEST: documents.ocr.request
-      RABBITMQ_ROUTING_KEY_RESPONSE: documents.ocr.response
+
+      # RabbitMQ and MinIO (merge both common configs)
+      <<: [*rabbitmq-common, *minio-common]
+      
+      # RabbitMQ API-specific queues and routing keys
+      OCR_QUEUE: documents.ocr.processing
+      OCR_RESPONSE_QUEUE: documents.ocr.processing.response
+      OCR_ROUTING_KEY_REQUEST: documents.ocr.request
+      OCR_ROUTING_KEY_RESPONSE: documents.ocr.response
+      GENAI_QUEUE: documents.genai.processing
+      GENAI_RESPONSE_QUEUE: documents.genai.processing.response
+      GENAI_ROUTING_KEY_REQUEST: documents.genai.request
+      GENAI_ROUTING_KEY_RESPONSE: documents.genai.response
+
+      # MinIO API-specific (uses http:// prefix and has external endpoint for presigned URLs)
       MINIO_ENDPOINT: http://minio:9000
       MINIO_EXTERNAL_ENDPOINT: http://localhost:8000
-      MINIO_ACCESS_KEY: paperless
-      MINIO_SECRET_KEY: paperless123
-      MINIO_DOCUMENTS_BUCKET: paperless-documents
       MINIO_BUCKET_OCR_TEXT: paperless-ocr-text
     volumes:
       - ./rest-api:/app
@@ -58,30 +89,36 @@ services:
       - paperless-net
 
   ocr-worker:
-    build: ./ocr-worker
+    build:
+      context: .
+      dockerfile: ./workers/ocr-worker/Dockerfile
     restart: unless-stopped
     environment:
-      # RabbitMQ Configuration
-      RABBITMQ_HOST: rabbitmq
-      RABBITMQ_PORT: 5672
-      RABBITMQ_USER: guest
-      RABBITMQ_PASSWORD: guest
-      RABBITMQ_EXCHANGE: documents.operations
-      RABBITMQ_QUEUE: documents.processing
-      RABBITMQ_RESPONSE_QUEUE: documents.processing.response
+      <<: [*rabbitmq-common, *minio-workers, *worker-common]
+      RABBITMQ_QUEUE: documents.ocr.processing
+      RABBITMQ_RESPONSE_QUEUE: documents.ocr.processing.response
       RABBITMQ_ROUTING_KEY_REQUEST: documents.ocr.request
       RABBITMQ_ROUTING_KEY_RESPONSE: documents.ocr.response
-
-      # MinIO Configuration
-      MINIO_ENDPOINT: minio:9000
-      MINIO_ACCESS_KEY: paperless
-      MINIO_SECRET_KEY: paperless123
-      MINIO_SECURE: "false"
-      MINIO_DOCUMENTS_BUCKET: paperless-documents
-      MINIO_OCR_TEXT_BUCKET: paperless-ocr-text
       OCR_TEXT_SIZE_THRESHOLD: "102400"
-      LOG_LEVEL: INFO
-      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    networks:
+      - paperless-net
+
+  genai-worker:
+    build:
+      context: .
+      dockerfile: ./workers/genai-worker/Dockerfile
+    restart: unless-stopped
+    environment:
+      <<: [*rabbitmq-common, *minio-workers, *worker-common]
+      RABBITMQ_QUEUE: documents.genai.processing
+      RABBITMQ_RESPONSE_QUEUE: documents.genai.processing.response
+      RABBITMQ_ROUTING_KEY_REQUEST: documents.genai.request
+      RABBITMQ_ROUTING_KEY_RESPONSE: documents.genai.response
     depends_on:
       rabbitmq:
         condition: service_healthy

@@ -1,29 +1,31 @@
-"""Configuration module"""
+"""Shared configuration for all workers"""
 
 import os
 
 
-class Config:
-    """Application configuration"""
+class SharedConfig:
+    """Common infrastructure configuration shared by all workers"""
 
-    # RabbitMQ
+    # RabbitMQ Connection
     RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
     RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", "5672"))
     RABBITMQ_USER = os.getenv("RABBITMQ_USER", "guest")
     RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
+    RABBITMQ_EXCHANGE = os.getenv("RABBITMQ_EXCHANGE", "documents.operations")
 
-    # RabbitMQ Routing
-    EXCHANGE = os.getenv("RABBITMQ_EXCHANGE", "documents.operations")
-    QUEUE = os.getenv("RABBITMQ_QUEUE", "documents.processing")
-    RESPONSE_QUEUE = os.getenv("RABBITMQ_RESPONSE_QUEUE", f"{QUEUE}.response")
-    ROUTING_KEY_REQUEST = os.getenv(
-        "RABBITMQ_ROUTING_KEY_REQUEST", "documents.ocr.request"
+    # RabbitMQ Queues (worker-specific via env vars)
+    RABBITMQ_QUEUE = os.getenv("RABBITMQ_QUEUE", "documents.processing")
+    RABBITMQ_RESPONSE_QUEUE = os.getenv(
+        "RABBITMQ_RESPONSE_QUEUE", f"{RABBITMQ_QUEUE}.response"
     )
-    ROUTING_KEY_RESPONSE = os.getenv(
-        "RABBITMQ_ROUTING_KEY_RESPONSE", "documents.ocr.response"
+    RABBITMQ_ROUTING_KEY_REQUEST = os.getenv(
+        "RABBITMQ_ROUTING_KEY_REQUEST", "documents.request"
+    )
+    RABBITMQ_ROUTING_KEY_RESPONSE = os.getenv(
+        "RABBITMQ_ROUTING_KEY_RESPONSE", "documents.response"
     )
 
-    # MinIO
+    # MinIO Connection
     MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
     MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
     MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
@@ -37,13 +39,5 @@ class Config:
         "MINIO_OCR_TEXT_BUCKET", "paperless-ocr-text"
     )
 
-    # OCR Settings
-    OCR_TEXT_SIZE_THRESHOLD = int(
-        os.getenv("OCR_TEXT_SIZE_THRESHOLD", str(100 * 1024))
-    )  # 100 KB
-
     # Logging
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
-
-    # Google Gemini
-    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
