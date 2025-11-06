@@ -17,7 +17,8 @@ COPY workers/genai-worker/pyproject.toml ./
 COPY workers/genai-worker/src/ ./src/
 
 # Install GenAI worker dependencies (shared is already installed)
-RUN uv pip install --system --no-cache .
+# Use --no-sources to ignore [tool.uv.sources] which is only for local dev
+RUN uv pip install --system --no-cache --no-sources .
 
 # Set Python to run in unbuffered mode
 ENV PYTHONUNBUFFERED=1

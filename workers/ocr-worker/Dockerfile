@@ -26,7 +26,8 @@ COPY workers/ocr-worker/pyproject.toml ./
 COPY workers/ocr-worker/src/ ./src/
 
 # Install OCR worker dependencies (shared is already installed)
-RUN uv pip install --system --no-cache .
+# Use --no-sources to ignore [tool.uv.sources] which is only for local dev
+RUN uv pip install --system --no-cache --no-sources .
 
 # Set Python to run in unbuffered mode
 ENV PYTHONUNBUFFERED=1
