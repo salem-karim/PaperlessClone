@@ -3,17 +3,27 @@
 import json
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any, Optional, TypeVar, Generic
 
 from pika.adapters.blocking_connection import BlockingChannel
 
+from paperless_shared.models import AbstractRequestDto, AbstractResponseDto
+
 logger = logging.getLogger(__name__)
 
+# Generic type variables for request and response DTOs
+TRequest = TypeVar("TRequest", bound=AbstractRequestDto)
+TResponse = TypeVar("TResponse", bound=AbstractResponseDto)
 
-class AbstractMessageHandler(ABC):
+
+class AbstractMessageHandler(ABC, Generic[TRequest, TResponse]):
     """
     Base class for worker message handlers.
-    
+
+    Type parameters:
+        TRequest: The request DTO type (subclass of AbstractRequestDto)
+        TResponse: The response DTO type (subclass of AbstractResponseDto)
+
     Subclasses must implement:
     - _process_message: Process the incoming message and return a response
     """
@@ -35,22 +45,26 @@ class AbstractMessageHandler(ABC):
         try:
             # Parse JSON message
             message = json.loads(body)
-            
+
             if not isinstance(message, dict):
                 logger.warning("Message is not a valid dict")
                 channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
                 return
 
-            logger.info(f"Processing message for document: {message.get('document_id', 'unknown')}")
-            
+            logger.info(
+                f"Processing message for document: {message.get('document_id', 'unknown')}"
+            )
+
             # Call worker-specific processing
-            response = self._process_message(message)
-            
+            response = self._process_message(message)  # type: ignore[arg-type] ignore type hinting for json object
+
             # Publish response if one was returned
             if response:
                 self.rabbitmq.publish_response(response)
-                logger.info(f"Published response for document {response.get('document_id')}")
-            
+                logger.info(
+                    f"Published response for document {response.get('document_id')}"
+                )
+
             # Acknowledge message
             channel.basic_ack(delivery_tag=method.delivery_tag)
             logger.info("Message acknowledged")
@@ -63,26 +77,24 @@ class AbstractMessageHandler(ABC):
             channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     @abstractmethod
-    def _process_message(self, message: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def _process_message(self, message: TRequest) -> Optional[TResponse]:
         """
-        Process the message and return a response dict (or None).
-        
+        Process the message and return a response (or None).
+
         Args:
-            message: Parsed message body as dict
-            
+            message: Parsed message body as request DTO
+
         Returns:
-            Response dict to publish, or None if no response needed
-            
+            Response DTO to publish, or None if no response needed
+
         Raises:
             Exception: Any processing errors (will be caught and logged)
         """
         raise NotImplementedError("Subclasses must implement _process_message")
 
-    def _create_error_response(
-        self, document_id: str, error_message: str
-    ) -> Dict[str, Any]:
+    def _create_error_response(self, document_id: str, error_message: str) -> TResponse:
         """Helper to create a standard error response"""
-        return {
+        return {  # type: ignore[return-value]
             "document_id": document_id,
             "status": "failed",
             "worker": self.config.WORKER_NAME,

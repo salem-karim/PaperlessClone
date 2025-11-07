@@ -1,11 +1,15 @@
 """OCR Worker Data Models and DTOs"""
 
-from typing import TypedDict, Optional
+from typing import Optional
+from paperless_shared.models import AbstractRequestDto, AbstractResponseDto
 
 
-class OcrRequestDto(TypedDict, total=False):
-    """Incoming OCR request from RabbitMQ"""
-    document_id: str
+class OcrRequestDto(AbstractRequestDto, total=False):
+    """Incoming OCR request from RabbitMQ
+
+    Inherits document_id from AbstractRequestDto.
+    """
+
     title: str
     original_filename: str
     content_type: str
@@ -14,16 +18,14 @@ class OcrRequestDto(TypedDict, total=False):
     file_object_key: str
 
 
-class OcrResponseDto(TypedDict, total=False):
-    """Response sent back to RabbitMQ after OCR processing"""
-    document_id: str
-    status: str  # "completed" or "failed"
-    worker: str  # "ocr"
-    
-    # Option 1: Small text (< 100KB)
+class OcrResponseDto(AbstractResponseDto, total=False):
+    """Response sent back to RabbitMQ after OCR processing
+
+    Inherits document_id, status, worker, error from AbstractResponseDto.
+    """
+
+    # For small text (< 100KB)
     ocr_text: Optional[str]
-    
-    # Option 2: Large text stored in MinIO
+
+    # For large text stored in MinIO
     ocr_text_object_key: Optional[str]  # Just the key, bucket is implied
-    
-    error: Optional[str]

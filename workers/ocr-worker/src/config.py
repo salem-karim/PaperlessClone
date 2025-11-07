@@ -17,12 +17,9 @@ class OcrConfig(SharedConfig):
     TESSERACT_DPI = int(os.getenv("TESSERACT_DPI", "300"))
 
     # PDF Processing
-    PDF_PARALLEL_THRESHOLD_PAGES = int(
-        os.getenv("PDF_PARALLEL_THRESHOLD_PAGES", "5")
-    )
+    PDF_PARALLEL_THRESHOLD_PAGES = int(os.getenv("PDF_PARALLEL_THRESHOLD_PAGES", "5"))
     PDF_PARALLEL_THRESHOLD_BYTES = int(
-        os.getenv("PDF_PARALLEL_THRESHOLD_BYTES", str(1 * 1024 * 1024))
-    )  # 1MB
+        os.getenv("PDF_PARALLEL_THRESHOLD_BYTES", str(1 * 1024 * 1024))  # 1MB
+    )
 
-    # Worker-specific (usually set by docker-compose)
     WORKER_NAME = "ocr"
