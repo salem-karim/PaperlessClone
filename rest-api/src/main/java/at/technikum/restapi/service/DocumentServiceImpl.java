@@ -32,21 +32,52 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentPublisherImpl publisher;
     private final MinioService minioService;
 
+    // Supported file types for OCR
+    private static final List<String> SUPPORTED_MIME_TYPES = List.of(
+            "application/pdf",
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+            "image/tiff",
+            "image/bmp",
+            "image/gif");
+
+    private static final List<String> SUPPORTED_EXTENSIONS = List.of(
+            ".pdf",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".tiff",
+            ".tif",
+            ".bmp",
+            ".gif");
+
     @Override
     public DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt) {
         if (file == null || file.isEmpty()) {
             throw new InvalidDocumentException("No file provided");
         }
 
-        // Check MIME type
-        if (!"application/pdf".equals(file.getContentType())) {
-            throw new InvalidDocumentException("Only PDF files are allowed");
+        // Get file information
+        final String contentType = file.getContentType();
+        final String originalName = file.getOriginalFilename();
+
+        if (originalName == null || originalName.isBlank()) {
+            throw new InvalidDocumentException("Invalid filename");
         }
 
-        // Optional: double-check extension
-        final String originalName = file.getOriginalFilename();
-        if (originalName == null || !originalName.toLowerCase().endsWith(".pdf")) {
-            throw new InvalidDocumentException("File must have .pdf extension");
+        // Check file extension
+        final String extension = originalName.substring(originalName.lastIndexOf('.')).toLowerCase();
+        if (!SUPPORTED_EXTENSIONS.contains(extension)) {
+            throw new InvalidDocumentException(
+                    "Unsupported file type. Supported formats: PDF, PNG, JPG, JPEG, TIFF, BMP, GIF");
+        }
+
+        // Check MIME type
+        if (contentType == null || !SUPPORTED_MIME_TYPES.contains(contentType.toLowerCase())) {
+            throw new InvalidDocumentException(
+                    "Unsupported content type: " + contentType
+                            + ". Supported formats: PDF, PNG, JPG, JPEG, TIFF, BMP, GIF");
         }
 
         try {
@@ -60,7 +91,7 @@ public class DocumentServiceImpl implements DocumentService {
                     .contentType(file.getContentType())
                     .createdAt(createdAt)
                     .fileSize(file.getSize())
-                    .ocrStatus(Document.OcrStatus.PENDING)
+                    .processingStatus(Document.ProcessingStatus.PENDING)
                     .build();
 
             final var saved = repository.save(entity);
@@ -119,8 +150,8 @@ public class DocumentServiceImpl implements DocumentService {
 
             return new OcrStatusDto(
                     entity.getId(),
-                    entity.getOcrStatus(),
-                    entity.getOcrError());
+                    entity.getProcessingStatus(),
+                    entity.getProcessingError());
         } catch (final DataAccessException e) {
             throw new DocumentProcessingException("Error fetching OCR status for ID=" + id, e);
         }
@@ -178,7 +209,9 @@ public class DocumentServiceImpl implements DocumentService {
             final var document = repository.findById(documentId)
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
-            document.setOcrStatus(Document.OcrStatus.COMPLETED);
+            // Update status to OCR_COMPLETED (ready for GenAI)
+            document.setProcessingStatus(Document.ProcessingStatus.OCR_COMPLETED);
+            document.setOcrProcessedAt(Instant.now());
 
             if (ocrText != null) {
                 // Small text stored inline
@@ -193,8 +226,12 @@ public class DocumentServiceImpl implements DocumentService {
                 log.info("Updated document {} with OCR text reference: {}",
                         documentId, ocrTextObjectKey);
             }
-            repository.save(document);
-            log.info("Document {} OCR status updated to COMPLETED", documentId);
+
+            final var saved = repository.save(document);
+            log.info("Document {} status updated to OCR_COMPLETED", documentId);
+
+            // Publish to GenAI queue for summarization
+            publisher.publishDocumentForGenAI(saved);
         } catch (final DocumentNotFoundException e) {
             throw e;
         } catch (final Exception e) {
@@ -209,15 +246,56 @@ public class DocumentServiceImpl implements DocumentService {
             final var document = repository.findById(documentId)
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
-            document.setOcrStatus(Document.OcrStatus.FAILED);
+            document.setProcessingStatus(Document.ProcessingStatus.OCR_FAILED);
+            document.setProcessingError(error);
             repository.save(document);
 
-            log.error("Marked document {} as OCR FAILED: {}", documentId, error);
+            log.error("Marked document {} as OCR_FAILED: {}", documentId, error);
         } catch (final DocumentNotFoundException e) {
             throw e;
         } catch (final Exception e) {
             log.error("Failed to mark document {} as failed: {}", documentId, e.getMessage());
             throw new DocumentProcessingException("Error marking document as failed: " + documentId, e);
+        }
+    }
+
+    @Override
+    public void updateGenAIResult(final UUID documentId, final String summaryText) {
+        try {
+            final var document = repository.findById(documentId)
+                    .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+            document.setProcessingStatus(Document.ProcessingStatus.COMPLETED);
+            document.setSummaryText(summaryText);
+            document.setGenaiProcessedAt(Instant.now());
+            repository.save(document);
+
+            log.info("Document {} GenAI processing completed ({} chars summary)",
+                    documentId, summaryText != null ? summaryText.length() : 0);
+        } catch (final DocumentNotFoundException e) {
+            throw e;
+        } catch (final Exception e) {
+            log.error("Failed to update GenAI result for document {}: {}", documentId, e.getMessage());
+            throw new DocumentProcessingException("Error updating GenAI result for document: " + documentId, e);
+        }
+    }
+
+    @Override
+    public void markGenAIAsFailed(final UUID documentId, final String error) {
+        try {
+            final var document = repository.findById(documentId)
+                    .orElseThrow(() -> new DocumentNotFoundException(documentId));
+
+            document.setProcessingStatus(Document.ProcessingStatus.GENAI_FAILED);
+            document.setProcessingError(error);
+            repository.save(document);
+
+            log.error("Marked document {} as GENAI_FAILED: {}", documentId, error);
+        } catch (final DocumentNotFoundException e) {
+            throw e;
+        } catch (final Exception e) {
+            log.error("Failed to mark document {} GenAI as failed: {}", documentId, e.getMessage());
+            throw new DocumentProcessingException("Error marking GenAI as failed: " + documentId, e);
         }
     }
 }

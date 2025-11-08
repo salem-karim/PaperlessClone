@@ -3,7 +3,7 @@ package at.technikum.restapi.service.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-import at.technikum.restapi.persistence.Document.OcrStatus;
+import at.technikum.restapi.persistence.Document.ProcessingStatus;
 import lombok.Builder;
 
 @Builder
@@ -13,7 +13,6 @@ public record DocumentSummaryDto(
         String originalFilename,
         Long fileSize,
         String contentType,
-        OcrStatus ocrStatus,
-        Instant createdAt
-) {
+        ProcessingStatus processingStatus,
+        Instant createdAt) {
 }

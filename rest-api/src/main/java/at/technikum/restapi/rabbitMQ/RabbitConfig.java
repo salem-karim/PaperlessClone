@@ -21,17 +21,29 @@ public class RabbitConfig {
     @Value("${EXCHANGE:documents.operations}")
     private String exchange;
 
-    @Value("${QUEUE:documents.processing}")
-    private String documentsQueue;
+    @Value("${OCR_QUEUE:documents.ocr.processing}")
+    private String ocrQueue;
 
-    @Value("${RESPONSE_QUEUE:documents.processing.response}")
-    private String responseQueue;
+    @Value("${OCR_RESPONSE_QUEUE:documents.ocr.processing.response}")
+    private String ocrResponseQueue;
+
+    @Value("${GENAI_QUEUE:documents.genai.processing}")
+    private String genaiQueue;
+
+    @Value("${GENAI_RESPONSE_QUEUE:documents.genai.processing.response}")
+    private String genaiResponseQueue;
 
     @Value("${OCR_ROUTING_KEY_REQUEST:documents.ocr.request}")
     private String ocrRoutingKeyRequest;
 
     @Value("${OCR_ROUTING_KEY_RESPONSE:documents.ocr.response}")
     private String ocrRoutingKeyResponse;
+
+    @Value("${GENAI_ROUTING_KEY_REQUEST:documents.genai.request}")
+    private String genaiRoutingKeyRequest;
+
+    @Value("${GENAI_ROUTING_KEY_RESPONSE:documents.genai.response}")
+    private String genaiRoutingKeyResponse;
 
     @Value("${RABBITMQ_HOST:localhost}")
     private String rabbitHost;
@@ -42,25 +54,47 @@ public class RabbitConfig {
     }
 
     @Bean
-    Queue documentsQueue() {
-        return new Queue(documentsQueue, true);
+    Queue ocrQueue() {
+        return new Queue(ocrQueue, true);
     }
 
     @Bean
-    Queue responseQueue() {
-        return new Queue(responseQueue, true);
+    Queue ocrResponseQueue() {
+        return new Queue(ocrResponseQueue, true);
     }
 
-    // Binding for requests (REST API -> OCR Worker)
     @Bean
-    Binding requestBinding(final Queue documentsQueue, final TopicExchange documentsExchange) {
-        return BindingBuilder.bind(documentsQueue).to(documentsExchange).with(ocrRoutingKeyRequest);
+    Queue genaiQueue() {
+        return new Queue(genaiQueue, true);
     }
 
-    // Binding for responses (OCR Worker -> REST API)
     @Bean
-    Binding responseBinding(final Queue responseQueue, final TopicExchange documentsExchange) {
-        return BindingBuilder.bind(responseQueue).to(documentsExchange).with(ocrRoutingKeyResponse);
+    Queue genaiResponseQueue() {
+        return new Queue(genaiResponseQueue, true);
+    }
+
+    // Binding for OCR requests (REST API -> OCR Worker)
+    @Bean
+    Binding ocrRequestBinding(final Queue ocrQueue, final TopicExchange documentsExchange) {
+        return BindingBuilder.bind(ocrQueue).to(documentsExchange).with(ocrRoutingKeyRequest);
+    }
+
+    // Binding for OCR responses (OCR Worker -> REST API)
+    @Bean
+    Binding ocrResponseBinding(final Queue ocrResponseQueue, final TopicExchange documentsExchange) {
+        return BindingBuilder.bind(ocrResponseQueue).to(documentsExchange).with(ocrRoutingKeyResponse);
+    }
+
+    // Binding for GenAI requests (REST API -> GenAI Worker)
+    @Bean
+    Binding genaiRequestBinding(final Queue genaiQueue, final TopicExchange documentsExchange) {
+        return BindingBuilder.bind(genaiQueue).to(documentsExchange).with(genaiRoutingKeyRequest);
+    }
+
+    // Binding for GenAI responses (GenAI Worker -> REST API)
+    @Bean
+    Binding genaiResponseBinding(final Queue genaiResponseQueue, final TopicExchange documentsExchange) {
+        return BindingBuilder.bind(genaiResponseQueue).to(documentsExchange).with(genaiRoutingKeyResponse);
     }
 
     @Bean

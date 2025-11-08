@@ -1,10 +1,10 @@
 package at.technikum.restapi.rabbitMQ;
 
 import at.technikum.restapi.persistence.Document;
-// import at.technikum.restapi.service.dto.OcrResponseDto;
+import at.technikum.restapi.service.dto.OcrResponseDto;
 
 public interface DocumentPublisher {
     void publishDocumentForOcr(final Document document);
 
-    // void publishOcrForGenAI(final OcrResponseDto ocrResponse);
+    void publishDocumentForGenAI(final Document document);
 }

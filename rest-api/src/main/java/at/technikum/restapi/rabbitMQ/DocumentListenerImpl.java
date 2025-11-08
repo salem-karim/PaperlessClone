@@ -6,6 +6,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import at.technikum.restapi.service.DocumentService;
+import at.technikum.restapi.service.dto.GenAIResponseDto;
 import at.technikum.restapi.service.dto.OcrResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,18 +17,19 @@ import lombok.extern.slf4j.Slf4j;
 public class DocumentListenerImpl implements DocumentListener {
 
     private final DocumentService documentService;
+    private final DocumentPublisher documentPublisher;
 
-    @RabbitListener(queues = "#{rabbitConfig.responseQueue}")
+    @RabbitListener(queues = "#{rabbitConfig.ocrResponseQueue}")
     public void handleOcrResponse(final OcrResponseDto response) {
-        log.info("Received OCR response for document: {}", response.getDocumentId());
-        log.info("Status: {}, Worker: {}", response.getStatus(), response.getWorker());
+        log.info("Received OCR response for document: {}", response.documentId());
+        log.info("Status: {}, Worker: {}", response.status(), response.worker());
 
         try {
-            final UUID documentId = UUID.fromString(response.getDocumentId());
+            final UUID documentId = UUID.fromString(response.documentId());
 
-            if ("completed".equals(response.getStatus())) {
-                final String ocrText = response.getOcrText();
-                final String ocrTextObjectKey = response.getOcrTextObjectKey();
+            if ("completed".equals(response.status())) {
+                final String ocrText = response.ocrText();
+                final String ocrTextObjectKey = response.ocrTextObjectKey();
                 if (ocrText != null && !ocrText.isEmpty()) {
                     // Small text sent inline
                     log.info("OCR completed successfully with inline text ({} chars)", ocrText.length());
@@ -47,21 +49,62 @@ public class DocumentListenerImpl implements DocumentListener {
                     documentService.markOcrAsFailed(documentId, "No OCR text or reference provided");
                 }
 
-            } else if ("failed".equals(response.getStatus())) {
-                final String error = response.getError() != null ? response.getError() : "Unknown error";
+            } else if ("failed".equals(response.status())) {
+                final String error = response.error() != null ? response.error() : "Unknown error";
                 log.error("OCR processing failed for document {}: {}", documentId, error);
 
                 documentService.markOcrAsFailed(documentId, error);
 
             } else {
-                log.warn("Unknown OCR response status: {}", response.getStatus());
+                log.warn("Unknown OCR response status: {}", response.status());
             }
 
         } catch (final IllegalArgumentException e) {
-            log.error("Invalid document ID in OCR response: {}", response.getDocumentId(), e);
+            log.error("Invalid document ID in OCR response: {}", response.documentId(), e);
         } catch (final Exception e) {
             log.error("Error processing OCR response for document {}: {}",
-                    response.getDocumentId(), e.getMessage(), e);
+                    response.documentId(), e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @RabbitListener(queues = "#{rabbitConfig.genaiResponseQueue}")
+    public void handleGenAIResponse(final GenAIResponseDto response) {
+        log.info("Received GenAI response for document: {}", response.documentId());
+        log.info("Status: {}, Worker: {}", response.status(), response.worker());
+
+        try {
+            final UUID documentId = UUID.fromString(response.documentId());
+
+            if ("completed".equals(response.status())) {
+                final String summaryText = response.summaryText();
+                
+                if (summaryText != null && !summaryText.isEmpty()) {
+                    log.info("GenAI completed successfully with summary ({} chars)", summaryText.length());
+                    log.debug("Summary preview: {}",
+                            summaryText.length() > 100 ? summaryText.substring(0, 100) + "..." : summaryText);
+
+                    documentService.updateGenAIResult(documentId, summaryText);
+                } else {
+                    log.warn("GenAI completed but no summary text provided");
+                    documentService.markGenAIAsFailed(documentId, "No summary text generated");
+                }
+
+            } else if ("failed".equals(response.status())) {
+                final String error = response.error() != null ? response.error() : "Unknown error";
+                log.error("GenAI processing failed for document {}: {}", documentId, error);
+
+                documentService.markGenAIAsFailed(documentId, error);
+
+            } else {
+                log.warn("Unknown GenAI response status: {}", response.status());
+            }
+
+        } catch (final IllegalArgumentException e) {
+            log.error("Invalid document ID in GenAI response: {}", response.documentId(), e);
+        } catch (final Exception e) {
+            log.error("Error processing GenAI response for document {}: {}",
+                    response.documentId(), e.getMessage(), e);
         }
     }
 }

@@ -5,7 +5,7 @@ import io
 from minio import Minio
 from minio.error import S3Error
 
-from .config import Config
+from .config import SharedConfig
 
 logger = logging.getLogger(__name__)
 
@@ -13,15 +13,16 @@ logger = logging.getLogger(__name__)
 class MinioClient:
     """Handles MinIO file operations"""
 
-    def __init__(self):
+    def __init__(self, config: SharedConfig):
+        self.config = config
         self.client = Minio(
-            Config.MINIO_ENDPOINT,
-            access_key=Config.MINIO_ACCESS_KEY,
-            secret_key=Config.MINIO_SECRET_KEY,
-            secure=Config.MINIO_SECURE,
+            config.MINIO_ENDPOINT,
+            access_key=config.MINIO_ACCESS_KEY,
+            secret_key=config.MINIO_SECRET_KEY,
+            secure=config.MINIO_SECURE,
         )
-        self.documents_bucket = Config.MINIO_DOCUMENTS_BUCKET
-        self.ocr_results_bucket = Config.MINIO_OCR_TEXT_BUCKET
+        self.documents_bucket = config.MINIO_DOCUMENTS_BUCKET
+        self.ocr_results_bucket = config.MINIO_OCR_TEXT_BUCKET
         
         self._ensure_buckets()
 

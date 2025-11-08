@@ -3,7 +3,7 @@ package at.technikum.restapi.service.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-import at.technikum.restapi.persistence.Document.OcrStatus;
+import at.technikum.restapi.persistence.Document.ProcessingStatus;
 import lombok.Builder;
 
 @Builder
@@ -13,14 +13,15 @@ public record DocumentDetailDto(
         String originalFilename,
         Long fileSize,
         String contentType,
-        String fileBucket,          // Added - needed for download
-        String fileObjectKey,       // Added - needed for download
+        String fileBucket, // Added - needed for download
+        String fileObjectKey, // Added - needed for download
         Instant createdAt,
-        String downloadUrl,         // Presigned URL to download original file from MinIO
-        OcrStatus ocrStatus,
-        String ocrText,             // Inline OCR text if available and small
-        String ocrTextDownloadUrl,  // Presigned URL if OCR text is stored in MinIO
-        String ocrError,            // Error message if OCR failed
-        Instant ocrProcessedAt
-) {
+        String downloadUrl, // Presigned URL to download original file from MinIO
+        ProcessingStatus processingStatus,
+        String ocrText, // Inline OCR text if available and small
+        String ocrTextDownloadUrl, // Presigned URL if OCR text is stored in MinIO
+        String summaryText, // AI-generated summary
+        String processingError, // Error message if any step failed
+        Instant ocrProcessedAt,
+        Instant genaiProcessedAt) {
 }

@@ -58,11 +58,11 @@ export async function deleteDocument(id: string): Promise<void> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
-// GET OCR status
-export async function getOcrStatus(id: string): Promise<{
+// GET processing status
+export async function getProcessingStatus(id: string): Promise<{
   id: string;
-  ocrStatus: string;
-  ocrError?: string;
+  processingStatus: string;
+  processingError?: string;
 }> {
   const res = await fetch(`/api/v1/documents/${id}/status`);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);

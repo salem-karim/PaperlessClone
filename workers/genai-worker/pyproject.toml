@@ -1,0 +1,19 @@
+[project]
+name = "genAI-worker"
+version = "0.1.0"
+description = "GenAI worker service for PaperlessClone"
+requires-python = ">=3.11"
+dependencies = [
+    "paperless-shared",
+    "google-genai>=1.49.0",
+]
+
+# For local development only (Docker installs shared package directly)
+[tool.uv.sources]
+paperless-shared = { path = "../shared", editable = true }
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+extraPaths = ["../shared"]
+pythonVersion = "3.11"
