@@ -67,6 +67,11 @@ class GenAIMessageHandler(AbstractMessageHandler[GenAIRequestDto, GenAIResponseD
             )
             summary_text = self.genai_service.summarize_text(ocr_text)
 
+            if summary_text == "[No summary generated]":
+                return self._create_error_response(doc_id, "No Summary got generated")
+            if "[Summarization failed:" in summary_text:
+                return self._create_error_response(doc_id, "Summarization failed")
+
             response: GenAIResponseDto = {
                 "document_id": doc_id,
                 "status": "completed",

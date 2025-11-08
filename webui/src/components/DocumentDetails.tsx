@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import {
   getDocumentById,
-  getOcrStatus,
+  getProcessingStatus,
   updateDocument,
   deleteDocument,
   downloadDocument,
@@ -24,7 +25,7 @@ const LOCALE = "de-AT";
 export default function DocumentDetails() {
   const { id } = useParams<{ id: string }>();
   const [document, setDocument] = useState<DocumentDetailDto | null>(null);
-  const [ocrStatus, setOcrStatus] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
@@ -40,29 +41,31 @@ export default function DocumentDetails() {
       if (err) console.error(err);
       else if (doc) {
         setDocument(doc);
-        setOcrStatus(doc.ocrStatus);
+        setProcessingStatus(doc.processingStatus);
         setEditedTitle(doc.title);
       }
     });
   }, [id]);
 
-  // Poll status if OCR is pending/processing
+  // Poll status if document is still processing
   useEffect(() => {
-    if (!id || !ocrStatus) return;
-    if (ocrStatus === "COMPLETED" || ocrStatus === "FAILED") return;
+    if (!id || !processingStatus) return;
+    if (processingStatus === "COMPLETED" || processingStatus === "OCR_FAILED" || processingStatus === "GENAI_FAILED") return;
 
     const pollInterval = setInterval(async () => {
-      const [status, err] = await tryCatch(getOcrStatus(id));
+      const [status, err] = await tryCatch(getProcessingStatus(id));
       if (err) {
-        console.error("Failed to fetch OCR status:", err);
+        console.error("Failed to fetch processing status:", err);
         return;
       }
 
       if (status) {
-        setOcrStatus(status.ocrStatus);
+        setProcessingStatus(status.processingStatus);
 
-        // If completed, reload full document to get OCR text
-        if (status.ocrStatus === "COMPLETED" || status.ocrStatus === "FAILED") {
+        // If completed or failed, reload full document to get results
+        if (status.processingStatus === "COMPLETED" || 
+            status.processingStatus === "OCR_FAILED" || 
+            status.processingStatus === "GENAI_FAILED") {
           const [doc, docErr] = await tryCatch(getDocumentById(id));
           if (!docErr && doc) {
             setDocument(doc);
@@ -72,7 +75,7 @@ export default function DocumentDetails() {
     }, 3000); // Poll every 3 seconds
 
     return () => clearInterval(pollInterval);
-  }, [id, ocrStatus]);
+  }, [id, processingStatus]);
 
   const handleStartEdit = () => {
     setIsEditingTitle(true);
@@ -221,47 +224,125 @@ export default function DocumentDetails() {
         </div>
       </div>
 
-      {/* OCR Status */}
+      {/* Processing Status */}
       <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2 mb-2">
-          <span className="font-semibold">OCR Status:</span>
-          {ocrStatus === "PENDING" && (
+          <span className="font-semibold">Processing Status:</span>
+          {processingStatus === "PENDING" && (
             <span className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
               <FaSpinner className="animate-spin" />
-              Pending
+              Waiting to start...
             </span>
           )}
-          {ocrStatus === "PROCESSING" && (
+          {processingStatus === "OCR_PROCESSING" && (
             <span className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
               <FaSpinner className="animate-spin" />
-              Processing
+              Extracting text (OCR)...
             </span>
           )}
-          {ocrStatus === "COMPLETED" && (
+          {processingStatus === "OCR_COMPLETED" && (
+            <span className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+              <FaSpinner className="animate-spin" />
+              OCR complete, waiting for summarization...
+            </span>
+          )}
+          {processingStatus === "GENAI_PROCESSING" && (
+            <span className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+              <FaSpinner className="animate-spin" />
+              Generating AI summary...
+            </span>
+          )}
+          {processingStatus === "COMPLETED" && (
             <span className="text-green-600 dark:text-green-400">
-              ✓ Completed
+              ✓ Processing Complete
             </span>
           )}
-          {ocrStatus === "FAILED" && (
-            <span className="text-red-600 dark:text-red-400">✗ Failed</span>
+          {processingStatus === "OCR_FAILED" && (
+            <span className="text-red-600 dark:text-red-400">✗ OCR Failed</span>
+          )}
+          {processingStatus === "GENAI_FAILED" && (
+            <span className="text-orange-600 dark:text-orange-400">⚠ AI Summarization Failed (OCR succeeded)</span>
           )}
         </div>
 
-        {document.ocrError && (
+        {document.processingError && (
           <p className="text-sm text-red-500 mt-2">
-            Error: {document.ocrError}
+            Error: {document.processingError}
           </p>
         )}
       </div>
 
-      {/* OCR Text */}
-      {ocrStatus === "COMPLETED" && document.ocrText && (
-        <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold mb-3">Extracted Text</h2>
-          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md max-h-96 overflow-y-auto">
+      {/* OCR Text - Only shown when GenAI fails as fallback */}
+      {processingStatus === "GENAI_FAILED" && document.ocrText && (
+        <div className="p-4 rounded-lg border border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20">
+          <h2 className="text-xl font-semibold mb-3">Extracted Text (Fallback)</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+            AI summarization failed. Showing raw OCR text instead.
+          </p>
+          <div className="bg-white dark:bg-gray-900 p-4 rounded-md max-h-96 overflow-y-auto">
             <pre className="whitespace-pre-wrap text-sm font-mono">
               {document.ocrText}
             </pre>
+          </div>
+        </div>
+      )}
+
+      {/* AI Summary - Rendered as Markdown */}
+      {processingStatus === "COMPLETED" && document.summaryText && (
+        <div className="p-4 rounded-lg border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20">
+          <h2 className="text-xl font-semibold mb-3">AI Summary</h2>
+          <div className="bg-white dark:bg-gray-900 p-4 rounded-md prose prose-sm dark:prose-invert max-w-none">
+            <ReactMarkdown
+              components={{
+                // Customize code blocks
+                code: ({ node, inline, className, children, ...props }) => {
+                  return inline ? (
+                    <code
+                      className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-sm font-mono"
+                      {...props}
+                    >
+                      {children}
+                    </code>
+                  ) : (
+                    <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    </pre>
+                  );
+                },
+                // Style headings
+                h1: ({ children }) => (
+                  <h1 className="text-2xl font-bold mt-4 mb-2">{children}</h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="text-xl font-bold mt-3 mb-2">{children}</h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="text-lg font-semibold mt-2 mb-1">{children}</h3>
+                ),
+                // Style lists
+                ul: ({ children }) => (
+                  <ul className="list-disc list-inside ml-4 mb-2">{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="list-decimal list-inside ml-4 mb-2">{children}</ol>
+                ),
+                // Style links
+                a: ({ children, href }) => (
+                  <a
+                    href={href}
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {children}
+                  </a>
+                ),
+              }}
+            >
+              {document.summaryText}
+            </ReactMarkdown>
           </div>
         </div>
       )}
@@ -271,7 +352,7 @@ export default function DocumentDetails() {
         onClick={handleDownload}
         className="px-6 py-3 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition text-center w-full"
       >
-        Download Original PDF
+        Download Original File
       </button>
 
       {/* Document Metadata */}

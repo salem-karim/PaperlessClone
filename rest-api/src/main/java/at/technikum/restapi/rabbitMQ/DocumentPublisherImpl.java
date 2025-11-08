@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import at.technikum.restapi.persistence.Document;
 import at.technikum.restapi.service.dto.OcrRequestDto;
+import at.technikum.restapi.service.dto.OcrResponseDto;
 import at.technikum.restapi.service.mapper.DocumentMapper;
 
 @Slf4j
@@ -33,5 +34,23 @@ public class DocumentPublisherImpl implements DocumentPublisher {
                 ocrRequest);
 
         log.info("Published OCR request for document ID: {}", document.getId());
+    }
+
+    @Override
+    public void publishDocumentForGenAI(final Document document) {
+        log.info("Publishing GenAI request for document: {} (ID: {})",
+                document.getTitle(), document.getId());
+
+        // Use mapper to convert entity to GenAI request DTO
+        final var genaiRequest = mapper.toGenAIRequestDto(document);
+
+        log.debug("GenAI Request payload: {}", genaiRequest);
+
+        rabbitTemplate.convertAndSend(
+                rabbitConfig.getExchange(),
+                rabbitConfig.getGenaiRoutingKeyRequest(),
+                genaiRequest);
+
+        log.info("Published GenAI request for document ID: {}", document.getId());
     }
 }

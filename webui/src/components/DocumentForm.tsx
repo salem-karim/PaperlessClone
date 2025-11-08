@@ -10,14 +10,24 @@ export default function DocumentForm() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const SUPPORTED_MIME_TYPES = [
+    "application/pdf",
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/tiff",
+    "image/bmp",
+    "image/gif",
+  ];
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!title.trim() || !file) {
-      setError("Please provide a title and select a PDF file.");
+      setError("Please provide a title and select a file (PDF or image).");
       return;
     }
-    if (file.type !== "application/pdf") {
-      setError("Only PDF files are allowed.");
+    if (!SUPPORTED_MIME_TYPES.includes(file.type)) {
+      setError("Unsupported file type. Please upload a PDF, PNG, JPG, TIFF, BMP, or GIF file.");
       return;
     }
     setLoading(true);
@@ -48,13 +58,16 @@ export default function DocumentForm() {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="font-semibold">File</label>
+          <label className="font-semibold">File (PDF or Image)</label>
           <input
             type="file"
-            accept="application/pdf"
+            accept="application/pdf,image/png,image/jpeg,image/jpg,image/tiff,image/bmp,image/gif"
             onChange={(e) => setFile(e.target.files?.[0])}
             className="cursor-pointer px-3 py-2 border rounded-md text-gray-700 dark:text-white bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition"
           />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Supported formats: PDF, PNG, JPG, JPEG, TIFF, BMP, GIF
+          </p>
         </div>
         {error && <p className="text-red-500">{error}</p>}
 

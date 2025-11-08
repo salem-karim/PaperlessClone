@@ -27,4 +27,8 @@ public interface DocumentService {
     void updateOcrResult(final UUID documentId, final String ocrText, final String ocrTextObjectKey);
 
     void markOcrAsFailed(final UUID documentId, final String error);
+
+    void updateGenAIResult(final UUID documentId, final String summaryText);
+
+    void markGenAIAsFailed(final UUID documentId, final String error);
 }

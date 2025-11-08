@@ -10,7 +10,7 @@ export type DocumentSummaryDto = {
   fileSize: number;
   originalFilename: string;
   contentType: string;
-  ocrStatus: OcrStatus;
+  processingStatus: ProcessingStatus;
   createdAt: string;
 };
 
@@ -19,8 +19,10 @@ export type DocumentDetailDto = DocumentSummaryDto & {
   downloadUrl: string;
   ocrText?: string;
   ocrTextDownloadUrl?: string;
-  ocrError?: string;
+  summaryText?: string;
+  processingError?: string;
   ocrProcessedAt?: string;
+  genaiProcessedAt?: string;
 };
 
 type SuccessResult<T> = readonly [T, null];
@@ -29,4 +31,11 @@ type ErrorResult<E = Error> = readonly [null, E];
 
 export type Result<T, E = Error> = SuccessResult<T> | ErrorResult<E>;
 
-export type OcrStatus = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+export type ProcessingStatus = 
+  | "PENDING"
+  | "OCR_PROCESSING"
+  | "OCR_COMPLETED"
+  | "GENAI_PROCESSING"
+  | "COMPLETED"
+  | "OCR_FAILED"
+  | "GENAI_FAILED";

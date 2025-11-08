@@ -19,11 +19,14 @@ import lombok.NoArgsConstructor;
 @Table(name = "documents")
 public class Document {
 
-    public enum OcrStatus {
-        PENDING, // Waiting for OCR processing
-        PROCESSING, // Currently being processed
-        COMPLETED, // OCR completed successfully
-        FAILED // OCR processing failed
+    public enum ProcessingStatus {
+        PENDING, // Not started
+        OCR_PROCESSING, // OCR in progress
+        OCR_COMPLETED, // OCR done, waiting for GenAI
+        GENAI_PROCESSING, // Summary generation in progress
+        COMPLETED, // Everything done
+        OCR_FAILED, // OCR failed (stops pipeline)
+        GENAI_FAILED // OCR succeeded, but GenAI failed (partial failure)
     }
 
     @Id
@@ -49,11 +52,11 @@ public class Document {
     @Column(nullable = false)
     private String fileObjectKey; // e.g., "2024/10/uuid-document.pdf"
 
-    // OCR Processing Status
+    // Document Processing Status (tracks OCR → GenAI pipeline)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private OcrStatus ocrStatus = OcrStatus.PENDING;
+    private ProcessingStatus processingStatus = ProcessingStatus.PENDING;
 
     // OCR Text (inline if small, < 100KB)
     @Lob
@@ -64,9 +67,14 @@ public class Document {
 
     private String ocrTextObjectKey; // e.g., "2024/10/uuid-ocr.txt"
 
-    // Error message if OCR failed
+    // GenAI Summary Text
+    @Lob
+    @Column(columnDefinition = "TEXT")
+    private String summaryText;
+
+    // Error message for processing failures
     @Column(length = 1000)
-    private String ocrError;
+    private String processingError;
 
     @CreationTimestamp
     @Column(updatable = false, nullable = false)
@@ -74,4 +82,7 @@ public class Document {
 
     @Column
     private Instant ocrProcessedAt;
+
+    @Column
+    private Instant genaiProcessedAt;
 }

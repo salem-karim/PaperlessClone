@@ -9,7 +9,7 @@ class GenAIConfig(SharedConfig):
 
     # Google Gemini API
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
-    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 
     # Summarization Settings
     SUMMARY_MAX_INPUT_LENGTH = int(
@@ -18,8 +18,23 @@ class GenAIConfig(SharedConfig):
 
     SUMMARY_PROMPT_TEMPLATE = os.getenv(
         "SUMMARY_PROMPT_TEMPLATE",
-        "Summarize the following OCR-extracted document text. "
-        "If the text is messy, try to make it concise and readable:\n\n{text}",
+        """
+            You are a document summarization assistant for a Document Management System (DMS).
+            Your task is to analyse the following OCR-extracted text and provide a structured summary.
+
+            Instructions:
+            1. Create a concise summary (2-3 sentences)
+            2. Identify the document type if possible
+            3. Also include newlines for better paragraph structure
+            4. Keep the summary factual and objective - do not add interpretations
+
+            Document text:
+            ---
+            {text}
+            ---
+
+            Provide the summary now.
+        """,
     )
 
     # Worker-specific

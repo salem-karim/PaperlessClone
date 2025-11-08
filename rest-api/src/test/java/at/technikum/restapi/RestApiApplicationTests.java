@@ -55,7 +55,7 @@ class DocumentControllerTest {
                 .fileBucket("test-bucket")
                 .fileObjectKey("test-object-key")
                 .createdAt(Instant.now())
-                .ocrStatus(Document.OcrStatus.PENDING)
+                .processingStatus(Document.ProcessingStatus.PENDING)
                 .build());
     }
 
@@ -87,7 +87,7 @@ class DocumentControllerTest {
                 .originalFilename(savedDoc.getOriginalFilename())
                 .contentType(savedDoc.getContentType())
                 .fileSize(savedDoc.getFileSize())
-                .ocrStatus(savedDoc.getOcrStatus())
+                .processingStatus(savedDoc.getProcessingStatus())
                 .createdAt(savedDoc.getCreatedAt())
                 .build();
 
@@ -106,7 +106,7 @@ class DocumentControllerTest {
                 .originalFilename("test.pdf")
                 .contentType("application/pdf")
                 .fileSize(12345L)
-                .ocrStatus(Document.OcrStatus.PENDING)
+                .processingStatus(Document.ProcessingStatus.PENDING)
                 .createdAt(Instant.now())
                 .build();
 
@@ -125,7 +125,7 @@ class DocumentControllerTest {
                 .originalFilename("test.pdf")
                 .contentType("application/pdf")
                 .fileSize(12345L)
-                .ocrStatus(Document.OcrStatus.PENDING)
+                .processingStatus(Document.ProcessingStatus.PENDING)
                 .createdAt(Instant.now())
                 .build();
 
