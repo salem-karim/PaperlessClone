@@ -7,7 +7,7 @@ from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
 
 import pytesseract
-from pdf2image import convert_from_bytes
+import pymupdf
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -31,23 +31,24 @@ class OcrService:
     @staticmethod
     def _ocr_page(index_img_tuple):
         """OCR a single image (index, image) pair"""
-        index, image = index_img_tuple
+        index, image_data = index_img_tuple
+        image = Image.open(io.BytesIO(image_data))
         text = pytesseract.image_to_string(image, lang="eng")
         return index, text
 
     @staticmethod
     def _convert_pdf_page(args):
-        pdf_data, page_number = args
-        from pdf2image import convert_from_bytes
-
-        return convert_from_bytes(
-            pdf_data,
-            dpi=300,
-            fmt="png",
-            first_page=page_number,
-            last_page=page_number,
-            thread_count=1,
-        )[0]
+        pdf_data, page_number, dpi = args
+        try:
+            doc = pymupdf.open(stream=pdf_data, filetype="pdf")
+            page = doc.load_page(page_number - 1)
+            zoom = dpi / 72
+            mat = pymupdf.Matrix(zoom, zoom)
+            pix = page.get_pixmap(matrix=mat)
+            return pix.tobytes("png")
+        except Exception as e:
+            logger.error(f"Failed to convert page {page_number}: {e}")
+            raise
 
     def _process_image(self, image_data: bytes) -> str:
         """OCR a single image"""
@@ -67,8 +68,8 @@ class OcrService:
             thread_count = max(1, math.floor(cpu_count * 0.75))
             logger.info(f"Using {thread_count} threads of {cpu_count} cores")
 
-            SMALL_PDF_THRESHOLD_PAGES = 5
-            SMALL_PDF_THRESHOLD_BYTES = 1 * 1024 * 1024  # 1MB
+            SMALL_PDF_THRESHOLD_PAGES = 3
+            SMALL_PDF_THRESHOLD_BYTES = 512 * 1024  # 512KB
 
             # Get total pages without converting everything
             from PyPDF2 import PdfReader
@@ -86,14 +87,15 @@ class OcrService:
             start_time = time.time()
             if use_parallel:
                 logger.info("PDF->image conversion: Using parallel processing")
-                args_list = [(pdf_data, i) for i in range(1, total_pages + 1)]
+                args_list = [(pdf_data, i, 300) for i in range(1, total_pages + 1)]
                 with ProcessPoolExecutor(max_workers=cpu_count) as executor:
                     images = list(executor.map(OcrService._convert_pdf_page, args_list))
             else:
                 logger.info("PDF->image conversion: Processing sequentially")
-                images = convert_from_bytes(
-                    pdf_data, dpi=300, fmt="png", thread_count=thread_count
-                )
+                images = [
+                    OcrService._convert_pdf_page((pdf_data, i, 300))
+                    for i in range(1, total_pages + 1)
+                ]
 
             conversion_time = time.time() - start_time
             logger.info(
