@@ -7,8 +7,8 @@ dependencies = [
     "paperless-shared",
     "pytesseract>=0.3.10",
     "Pillow>=10.0.0",
-    "pdf2image>=1.16.3",
     "pypdf2>=3.0.1",
+    "pymupdf>=1.26.6",
 ]
 
 # For local development only (Docker installs shared package directly)
