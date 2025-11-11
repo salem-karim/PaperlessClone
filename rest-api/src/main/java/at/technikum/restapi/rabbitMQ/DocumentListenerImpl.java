@@ -17,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 public class DocumentListenerImpl implements DocumentListener {
 
     private final DocumentService documentService;
-    private final DocumentPublisher documentPublisher;
 
     @RabbitListener(queues = "#{rabbitConfig.ocrResponseQueue}")
     public void handleOcrResponse(final OcrResponseDto response) {
@@ -78,7 +77,7 @@ public class DocumentListenerImpl implements DocumentListener {
 
             if ("completed".equals(response.status())) {
                 final String summaryText = response.summaryText();
-                
+
                 if (summaryText != null && !summaryText.isEmpty()) {
                     log.info("GenAI completed successfully with summary ({} chars)", summaryText.length());
                     log.debug("Summary preview: {}",

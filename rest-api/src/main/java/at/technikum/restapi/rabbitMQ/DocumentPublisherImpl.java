@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 
 import at.technikum.restapi.persistence.Document;
 import at.technikum.restapi.service.dto.OcrRequestDto;
-import at.technikum.restapi.service.dto.OcrResponseDto;
 import at.technikum.restapi.service.mapper.DocumentMapper;
 
 @Slf4j

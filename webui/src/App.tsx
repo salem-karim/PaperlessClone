@@ -40,9 +40,9 @@ export default function App() {
         Documents
         <Link
           to="/documents/new"
-          className="text-white hover:bg-blue-600 rounded-full p-1 flex items-center justify-center"
+          className="hover:bg-blue-100 dark:hover:bg-blue-600 rounded-full p-1 flex items-center justify-center"
         >
-          <FaPlus className="text-white" />
+          <FaPlus className="text-black dark:text-white" />
         </Link>
       </h1>
 
