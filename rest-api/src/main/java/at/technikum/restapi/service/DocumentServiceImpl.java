@@ -22,6 +22,11 @@ import at.technikum.restapi.service.mapper.DocumentMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.data.domain.PageRequest;
+import at.technikum.restapi.persistence.SearchDocumentRepository;
+import at.technikum.restapi.service.DocumentSearchIndexService;
+
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -31,6 +36,9 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentMapper mapper;
     private final DocumentPublisherImpl publisher;
     private final MinioService minioService;
+
+    private final SearchDocumentRepository searchDocumentRepository;
+    private final DocumentSearchIndexService documentSearchIndexService;
 
     // Supported file types for OCR
     private static final List<String> SUPPORTED_MIME_TYPES = List.of(
@@ -196,6 +204,8 @@ public class DocumentServiceImpl implements DocumentService {
                 }
             }
 
+            documentSearchIndexService.deleteFromIndex(id);
+
             repository.deleteById(id);
             log.info("Document with ID='{}' successfully deleted", id);
         } catch (final DataAccessException e) {
@@ -229,6 +239,8 @@ public class DocumentServiceImpl implements DocumentService {
 
             final var saved = repository.save(document);
             log.info("Document {} status updated to OCR_COMPLETED", documentId);
+
+            documentSearchIndexService.indexDocument(saved);
 
             // Publish to GenAI queue for summarization
             publisher.publishDocumentForGenAI(saved);
@@ -298,4 +310,29 @@ public class DocumentServiceImpl implements DocumentService {
             throw new DocumentProcessingException("Error marking GenAI as failed: " + documentId, e);
         }
     }
+
+    @Override
+    public List<DocumentSummaryDto> search(final String query, final int page, final int size) {
+        try {
+            final var pageable = PageRequest.of(page, size);
+
+            final var hits = searchDocumentRepository.findByContentContainingIgnoreCase(query, pageable);
+
+            return hits.stream()
+                    .map(doc -> DocumentSummaryDto.builder()
+                            .id(doc.getId())
+                            .title(doc.getTitle())
+                            .originalFilename(doc.getOriginalFilename())
+                            .fileSize(doc.getFileSize())
+                            .contentType(doc.getContentType())
+                            .processingStatus(doc.getProcessingStatus())
+                            .createdAt(doc.getCreatedAt())
+                            .build())
+                    .toList();
+        } catch (final Exception e) {
+            log.error("Failed to search documents for query '{}': {}", query, e.getMessage(), e);
+            throw new DocumentProcessingException("Error searching documents for query: " + query, e);
+        }
+    }
+
 }

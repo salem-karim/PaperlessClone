@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+
+
 @Slf4j
 @RestController
 @RequestMapping("/documents")
@@ -50,6 +52,18 @@ public class DocumentController {
         final var documents = service.getAll();
         return ResponseEntity.ok(documents);
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<DocumentSummaryDto>> searchDocuments(
+            @RequestParam("q") final String query,
+            @RequestParam(value = "page", defaultValue = "0") final int page,
+            @RequestParam(value = "size", defaultValue = "20") final int size) {
+
+        log.info("Received document search request: q='{}', page={}, size={}", query, page, size);
+        final var result = service.search(query, page, size);
+        return ResponseEntity.ok(result);
+    }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<DocumentDetailDto> getById(@PathVariable final UUID id) {
