@@ -16,6 +16,8 @@ public interface DocumentMapper {
 
     DocumentSummaryDto toSummaryDto(Document entity);
 
+    DocumentSummaryDto toSummaryDto(SearchDocument entity);
+
     DocumentDetailDto toDetailDto(Document entity);
 
     Document toEntity(DocumentSummaryDto dto);
@@ -28,7 +30,6 @@ public interface DocumentMapper {
     @Mapping(target = "documentId", source = "id")
     GenAIRequestDto toGenAIRequestDto(Document entity);
 
-    SearchDocument toSearchDocument(Document entity);
-
-    DocumentSummaryDto toSummaryDto(SearchDocument entity);
+    @Mapping(target = "processingStatus", expression = "java(document.getProcessingStatus().name())")
+    SearchDocument toSearchDocument(Document document);
 }

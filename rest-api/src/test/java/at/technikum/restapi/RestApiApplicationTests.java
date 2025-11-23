@@ -2,8 +2,10 @@ package at.technikum.restapi;
 
 import at.technikum.restapi.persistence.model.Document;
 import at.technikum.restapi.persistence.repository.DocumentRepository;
+import at.technikum.restapi.service.DocumentSearchService;
+import at.technikum.restapi.service.MinioService;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
-import at.technikum.restapi.service.messaging.publisher.DocumentPublisherImpl;
+import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,10 +14,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -25,6 +29,7 @@ import java.util.UUID;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class DocumentControllerTest {
 
     @Autowired
@@ -36,8 +41,15 @@ class DocumentControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    // Mock external services
     @MockitoBean
-    private DocumentPublisherImpl documentPublisher;
+    private DocumentPublisher documentPublisher;
+
+    @MockitoBean
+    private DocumentSearchService documentSearchService;
+
+    @MockitoBean
+    private MinioService minioService; // ← Add this to prevent MinIO connection attempts
 
     private Document savedDoc;
 
@@ -45,8 +57,12 @@ class DocumentControllerTest {
     void setup() {
         repository.deleteAll();
 
-        // Mock the publisher so it doesn't actually try to send messages
+        // Mock all external service calls
         doNothing().when(documentPublisher).publishDocumentForOcr(any());
+        doNothing().when(documentPublisher).publishDocumentForGenAI(any());
+        doNothing().when(documentSearchService).indexDocumentMetadata(any());
+        doNothing().when(documentSearchService).deleteFromIndex(any());
+        doNothing().when(minioService).deleteFile(anyString()); // ← Mock MinIO delete
 
         savedDoc = repository.save(Document.builder()
                 .title("Test Title")

@@ -105,3 +105,11 @@ export async function downloadDocument(
     window.URL.revokeObjectURL(url);
   }
 }
+
+export async function searchDocuments(query: string) {
+  const res = await fetch(
+    `api/v1/documents/search?q=${encodeURIComponent(query)}`,
+  );
+  if (!res.ok) throw new Error("Search failed");
+  return res.json() as Promise<DocumentSummaryDto[]>;
+}

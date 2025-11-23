@@ -38,9 +38,9 @@ public class DocumentController {
     public ResponseEntity<DocumentSummaryDto> uploadDocument(
             @RequestParam final MultipartFile file,
             @RequestParam final String title,
-            @RequestParam final Long createdAtMillis) {
+            @RequestParam final Long createdAt) {
         log.info("Received upload request: Title={}", title);
-        final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAtMillis));
+        final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAt));
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
     }
 
@@ -52,7 +52,7 @@ public class DocumentController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<DocumentSummaryDto>> searchDocuments(@RequestParam final String query) {
+    public ResponseEntity<List<DocumentSummaryDto>> searchDocuments(@RequestParam("q") final String query) {
         log.info("Received document search request: q='{}'", query);
         final var result = service.search(query);
         return ResponseEntity.ok(result);

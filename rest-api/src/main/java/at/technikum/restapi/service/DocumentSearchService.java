@@ -3,12 +3,18 @@ package at.technikum.restapi.service;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import at.technikum.restapi.persistence.model.Document;
 import at.technikum.restapi.persistence.model.SearchDocument;
 import at.technikum.restapi.persistence.repository.SearchDocumentRepository;
 import at.technikum.restapi.service.mapper.DocumentMapper;
+import co.elastic.clients.elasticsearch._types.query_dsl.Operator;
+import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,16 +24,13 @@ import lombok.extern.slf4j.Slf4j;
 public class DocumentSearchService {
 
     private final SearchDocumentRepository searchDocumentRepository;
-    private final DocumentMapper documentMapper;
+    private final ElasticsearchOperations elasticsearchOperations;
+    private final DocumentMapper mapper;
 
-    /**
-     * Index document metadata immediately on upload (before OCR/GenAI processing).
-     * This allows searching by title, filename, etc. even while processing.
-     */
     public void indexDocumentMetadata(final Document document) {
         try {
             // Map to SearchDocument (ocrText and summaryText will be null initially)
-            final SearchDocument searchDocument = documentMapper.toSearchDocument(document);
+            final SearchDocument searchDocument = mapper.toSearchDocument(document);
 
             searchDocumentRepository.save(searchDocument);
             log.info("Indexed document metadata {} in ElasticSearch (status: {})",
@@ -39,13 +42,9 @@ public class DocumentSearchService {
         }
     }
 
-    /**
-     * Update document in ElasticSearch after OCR completion.
-     * Updates OCR text and processing status.
-     */
     public void updateDocumentAfterOcr(final Document document) {
         try {
-            final SearchDocument searchDocument = documentMapper.toSearchDocument(document);
+            final SearchDocument searchDocument = mapper.toSearchDocument(document);
 
             searchDocumentRepository.save(searchDocument);
             log.info("Updated document {} in ElasticSearch after OCR (status: {}, text: {} chars)",
@@ -58,13 +57,9 @@ public class DocumentSearchService {
         }
     }
 
-    /**
-     * Update document in ElasticSearch after GenAI completion.
-     * Updates summary text and processing status.
-     */
     public void updateDocumentAfterGenAI(final Document document) {
         try {
-            final SearchDocument searchDocument = documentMapper.toSearchDocument(document);
+            final SearchDocument searchDocument = mapper.toSearchDocument(document);
 
             searchDocumentRepository.save(searchDocument);
             log.info("Updated document {} in ElasticSearch after GenAI (status: {}, summary: {} chars)",
@@ -77,12 +72,9 @@ public class DocumentSearchService {
         }
     }
 
-    /**
-     * Update document status in ElasticSearch when processing fails.
-     */
     public void updateDocumentStatus(final Document document) {
         try {
-            final SearchDocument searchDocument = documentMapper.toSearchDocument(document);
+            final SearchDocument searchDocument = mapper.toSearchDocument(document);
 
             searchDocumentRepository.save(searchDocument);
             log.info("Updated document {} status in ElasticSearch: {}",
@@ -93,9 +85,6 @@ public class DocumentSearchService {
         }
     }
 
-    /**
-     * Remove document from ElasticSearch index.
-     */
     public void deleteFromIndex(final UUID documentId) {
         try {
             searchDocumentRepository.deleteById(documentId);
@@ -106,18 +95,37 @@ public class DocumentSearchService {
         }
     }
 
-    /**
-     * Search documents by query string.
-     * Searches across title, filename, OCR text, and summary text.
-     */
-    public List<SearchDocument> search(final String query) {
+    public List<SearchDocument> search(final String queryString) {
+        if (queryString == null || queryString.isBlank())
+            log.info("Empty search query provided, return empty results");
         try {
-            // TODO: Implement full-text search query
-            // For now, return empty list - will implement in next step
-            log.info("Searching ElasticSearch for query: {}", query);
-            return List.of();
+            log.info("Searching ElasticSearch for query: {}", queryString);
+            final Query searchQuery = NativeQuery.builder()
+                    .withQuery(q -> q
+                            .multiMatch(m -> m
+                                    .query(queryString)
+                                    .fields(
+                                            "title^3", // Title is most important (3x boost)
+                                            "originalFilename^2", // Filename is important (2x boost)
+                                            "summaryText^1.5", // Summary is fairly important (1.5x boost)
+                                            "ocrText" // OCR text has normal weight
+                                    )
+                                    .type(TextQueryType.BestFields)
+                                    .fuzziness("AUTO") // Allow typos
+                                    .prefixLength(2) // Require first 2 chars to match exactly
+                                    .operator(Operator.Or)))
+                    .build();
+
+            final var searchHits = elasticsearchOperations.search(searchQuery, SearchDocument.class);
+            final var results = searchHits.getSearchHits().stream()
+                    .map(SearchHit::getContent)
+                    .toList();
+
+            log.info("Found {} documents matching query '{}'", results.size(), queryString);
+
+            return results;
         } catch (final Exception e) {
-            log.error("Failed to search documents for query '{}': {}", query, e.getMessage(), e);
+            log.error("Failed to search documents for query '{}': {}", queryString, e.getMessage(), e);
             throw new RuntimeException("Error searching documents", e);
         }
     }
