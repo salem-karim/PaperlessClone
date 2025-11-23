@@ -1,14 +1,14 @@
 package at.technikum.restapi.service;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.OcrStatusDto;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 
 public interface DocumentService {
 
@@ -31,4 +31,6 @@ public interface DocumentService {
     void updateGenAIResult(final UUID documentId, final String summaryText);
 
     void markGenAIAsFailed(final UUID documentId, final String error);
+
+    List<DocumentSummaryDto> search(final String query);
 }

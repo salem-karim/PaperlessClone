@@ -4,21 +4,21 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
-import at.technikum.restapi.persistence.Document;
+import at.technikum.restapi.persistence.model.Document;
+import at.technikum.restapi.persistence.model.SearchDocument;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
-import at.technikum.restapi.service.dto.GenAIRequestDto;
-import at.technikum.restapi.service.dto.OcrRequestDto;
+import at.technikum.restapi.service.messaging.dto.GenAIRequestDto;
+import at.technikum.restapi.service.messaging.dto.OcrRequestDto;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE, unmappedSourcePolicy = ReportingPolicy.IGNORE)
 public interface DocumentMapper {
 
     DocumentSummaryDto toSummaryDto(Document entity);
 
-    @Mapping(target = "downloadUrl", source = "downloadUrl")
-    @Mapping(target = "ocrText", source = "ocrText")
-    @Mapping(target = "ocrTextDownloadUrl", ignore = true)
-    DocumentDetailDto toDetailDto(Document entity, String downloadUrl, String ocrText);
+    DocumentSummaryDto toSummaryDto(SearchDocument entity);
+
+    DocumentDetailDto toDetailDto(Document entity);
 
     Document toEntity(DocumentSummaryDto dto);
 
@@ -29,4 +29,7 @@ public interface DocumentMapper {
 
     @Mapping(target = "documentId", source = "id")
     GenAIRequestDto toGenAIRequestDto(Document entity);
+
+    @Mapping(target = "processingStatus", expression = "java(document.getProcessingStatus().name())")
+    SearchDocument toSearchDocument(Document document);
 }

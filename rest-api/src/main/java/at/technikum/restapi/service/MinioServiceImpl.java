@@ -1,4 +1,4 @@
-package at.technikum.restapi.miniIO;
+package at.technikum.restapi.service;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import at.technikum.restapi.service.exception.DocumentProcessingException;
@@ -24,8 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RequiredArgsConstructor
-@Component
-public class MinioService {
+@Service
+public class MinioServiceImpl implements MinioService {
 
     private final MinioClient minioClient;
 
@@ -48,7 +48,8 @@ public class MinioService {
         }
     }
 
-    public String upload(final MultipartFile file) {
+    @Override
+    public String uploadFile(final MultipartFile file) {
         try {
             ensureBucket(bucketName);
             final String objectKey = UUID.randomUUID() + "-" + file.getOriginalFilename();
@@ -70,6 +71,7 @@ public class MinioService {
         }
     }
 
+    @Override
     public InputStream downloadFile(final String objectKey) {
         try {
             log.info("Downloading file: {}/{}", bucketName, objectKey);
@@ -84,7 +86,8 @@ public class MinioService {
         }
     }
 
-    public void delete(final String objectKey) {
+    @Override
+    public void deleteFile(final String objectKey) {
         try {
             minioClient.removeObject(
                     RemoveObjectArgs.builder()
@@ -98,6 +101,7 @@ public class MinioService {
         }
     }
 
+    @Override
     public void deleteOcrText(final String objectKey) {
         try {
             minioClient.removeObject(
@@ -112,6 +116,7 @@ public class MinioService {
         }
     }
 
+    @Override
     public String downloadOcrText(final String objectKey) {
         try {
             ensureBucket(ocrTextBucketName);
@@ -128,6 +133,7 @@ public class MinioService {
         }
     }
 
+    @Override
     public String uploadOcrText(final String documentId, final String ocrText) {
         try {
             ensureBucket(ocrTextBucketName);
@@ -155,6 +161,7 @@ public class MinioService {
      * Generates a presigned URL using the external client
      * This ensures the signature is calculated with the correct endpoint
      */
+    @Override
     public String generatePresignedUrl(final String objectKey, final int expiryMinutes) {
         try {
             String presignedUrl = minioClient.getPresignedObjectUrl(
@@ -174,23 +181,6 @@ public class MinioService {
         } catch (final Exception e) {
             log.error("Failed to generate presigned URL for {}: {}", objectKey, e.getMessage());
             throw new DocumentUploadException("Failed to generate presigned URL for " + objectKey, e);
-        }
-    }
-
-    public String generateOcrTextPresignedUrl(final String objectKey, final int expiryMinutes) {
-        try {
-            final String presignedUrl = minioClient.getPresignedObjectUrl(
-                    GetPresignedObjectUrlArgs.builder()
-                            .method(Method.GET)
-                            .bucket(ocrTextBucketName)
-                            .object(objectKey)
-                            .expiry(expiryMinutes * 60)
-                            .build());
-
-            log.debug("Generated presigned OCR text URL for {}: {}", objectKey, presignedUrl);
-            return presignedUrl;
-        } catch (final Exception e) {
-            throw new DocumentUploadException("Failed to generate presigned URL for OCR text: " + objectKey, e);
         }
     }
 }

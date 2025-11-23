@@ -8,10 +8,8 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import at.technikum.restapi.miniIO.MinioService;
-import at.technikum.restapi.persistence.Document;
-import at.technikum.restapi.persistence.DocumentRepository;
-import at.technikum.restapi.rabbitMQ.DocumentPublisherImpl;
+import at.technikum.restapi.persistence.model.Document;
+import at.technikum.restapi.persistence.repository.DocumentRepository;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.OcrStatusDto;
@@ -19,6 +17,7 @@ import at.technikum.restapi.service.exception.DocumentNotFoundException;
 import at.technikum.restapi.service.exception.DocumentProcessingException;
 import at.technikum.restapi.service.exception.InvalidDocumentException;
 import at.technikum.restapi.service.mapper.DocumentMapper;
+import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,8 +28,9 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository repository;
     private final DocumentMapper mapper;
-    private final DocumentPublisherImpl publisher;
+    private final DocumentPublisher publisher;
     private final MinioService minioService;
+    private final DocumentSearchService documentSearchService;
 
     // Supported file types for OCR
     private static final List<String> SUPPORTED_MIME_TYPES = List.of(
@@ -81,7 +81,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         try {
-            final String objectKey = minioService.upload(file);
+            final String objectKey = minioService.uploadFile(file);
 
             final var entity = Document.builder()
                     .title(title)
@@ -94,10 +94,15 @@ public class DocumentServiceImpl implements DocumentService {
                     .processingStatus(Document.ProcessingStatus.PENDING)
                     .build();
 
+            // Save to PostgreSQL
             final var saved = repository.save(entity);
+
+            // Index metadata in ElasticSearch immediately (search while still processing)
+            documentSearchService.indexDocumentMetadata(saved);
+
             final var dto = mapper.toSummaryDto(saved);
 
-            // Publish OCR request using the saved entity
+            // Publish OCR request
             publisher.publishDocumentForOcr(saved);
 
             return dto;
@@ -122,21 +127,7 @@ public class DocumentServiceImpl implements DocumentService {
             final var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            // Always use our API endpoint for downloads
-            final String downloadUrl = "/api/v1/documents/" + id + "/download";
-
-            // Get OCR text - either inline or from MinIO
-            String ocrText = entity.getOcrText();
-            if (ocrText == null && entity.getOcrTextObjectKey() != null) {
-                try {
-                    ocrText = minioService.downloadOcrText(entity.getOcrTextObjectKey());
-                } catch (final Exception e) {
-                    log.warn("Failed to download OCR text for document {}: {}", id, e.getMessage());
-                    ocrText = null;
-                }
-            }
-
-            return mapper.toDetailDto(entity, downloadUrl, ocrText);
+            return mapper.toDetailDto(entity);
         } catch (final DataAccessException e) {
             throw new DocumentProcessingException("Error accessing document with ID=" + id, e);
         }
@@ -172,6 +163,10 @@ public class DocumentServiceImpl implements DocumentService {
             }
 
             entity = repository.save(entity);
+
+            // Update metadata in ElasticSearch
+            documentSearchService.updateDocumentStatus(entity);
+
             return mapper.toSummaryDto(entity);
         } catch (final DataAccessException e) {
             throw new DocumentProcessingException("Error updating document with ID=" + id, e);
@@ -185,18 +180,14 @@ public class DocumentServiceImpl implements DocumentService {
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
             // Delete document file from MinIO
-            minioService.delete(document.getFileObjectKey());
+            minioService.deleteFile(document.getFileObjectKey());
 
-            // Delete OCR text from MinIO if it exists
-            if (document.getOcrTextObjectKey() != null) {
-                try {
-                    minioService.deleteOcrText(document.getOcrTextObjectKey());
-                } catch (final Exception e) {
-                    log.warn("Failed to delete OCR text for document {}: {}", id, e.getMessage());
-                }
-            }
+            // Delete from ElasticSearch
+            documentSearchService.deleteFromIndex(id);
 
+            // Delete from PostgreSQL
             repository.deleteById(id);
+
             log.info("Document with ID='{}' successfully deleted", id);
         } catch (final DataAccessException e) {
             throw new DocumentProcessingException("Error deleting document with ID=" + id, e);
@@ -209,34 +200,48 @@ public class DocumentServiceImpl implements DocumentService {
             final var document = repository.findById(documentId)
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
-            // Update status to OCR_COMPLETED (ready for GenAI)
             document.setProcessingStatus(Document.ProcessingStatus.OCR_COMPLETED);
             document.setOcrProcessedAt(Instant.now());
 
+            // Handle both inline and MinIO-stored text
             if (ocrText != null) {
-                // Small text stored inline
+                // Small text sent inline
                 document.setOcrText(ocrText);
-                document.setOcrTextObjectKey(null);
                 log.info("Updated document {} with inline OCR text ({} chars)",
                         documentId, ocrText.length());
             } else if (ocrTextObjectKey != null) {
-                // Large text stored in MinIO
-                document.setOcrText(null);
-                document.setOcrTextObjectKey(ocrTextObjectKey);
-                log.info("Updated document {} with OCR text reference: {}",
-                        documentId, ocrTextObjectKey);
+                // Large text in MinIO - fetch, save, then DELETE
+                try {
+                    final String largeOcrText = minioService.downloadOcrText(ocrTextObjectKey);
+                    document.setOcrText(largeOcrText);
+                    log.info("Updated document {} with OCR text from MinIO ({} chars)",
+                            documentId, largeOcrText.length());
+
+                    // IMPORTANT: Delete from MinIO immediately after saving to PostgreSQL
+                    minioService.deleteOcrText(ocrTextObjectKey);
+                    log.info("Deleted temporary OCR text from MinIO: {}", ocrTextObjectKey);
+                } catch (final Exception e) {
+                    log.error("Failed to fetch/delete OCR text from MinIO: {}", e.getMessage());
+                    throw new DocumentProcessingException("Error processing MinIO OCR text", e);
+                }
+            } else {
+                throw new DocumentProcessingException("OCR result missing both inline text and MinIO reference");
             }
 
+            // Save to PostgreSQL
             final var saved = repository.save(document);
-            log.info("Document {} status updated to OCR_COMPLETED", documentId);
+            log.info("Document {} OCR processing completed", documentId);
 
-            // Publish to GenAI queue for summarization
+            // Update in ElasticSearch with OCR text
+            documentSearchService.updateDocumentAfterOcr(saved);
+
+            // Publish to GenAI queue with TRUNCATED text (to avoid RabbitMQ size limits)
             publisher.publishDocumentForGenAI(saved);
         } catch (final DocumentNotFoundException e) {
             throw e;
         } catch (final Exception e) {
             log.error("Failed to update OCR result for document {}: {}", documentId, e.getMessage());
-            throw new DocumentProcessingException("Error updating OCR result for document: " + documentId, e);
+            throw new DocumentProcessingException("Error updating OCR result", e);
         }
     }
 
@@ -248,7 +253,11 @@ public class DocumentServiceImpl implements DocumentService {
 
             document.setProcessingStatus(Document.ProcessingStatus.OCR_FAILED);
             document.setProcessingError(error);
-            repository.save(document);
+
+            final var saved = repository.save(document);
+
+            // Update status in ElasticSearch
+            documentSearchService.updateDocumentStatus(saved);
 
             log.error("Marked document {} as OCR_FAILED: {}", documentId, error);
         } catch (final DocumentNotFoundException e) {
@@ -268,7 +277,11 @@ public class DocumentServiceImpl implements DocumentService {
             document.setProcessingStatus(Document.ProcessingStatus.COMPLETED);
             document.setSummaryText(summaryText);
             document.setGenaiProcessedAt(Instant.now());
-            repository.save(document);
+
+            final var saved = repository.save(document);
+
+            // Update in ElasticSearch with summary text
+            documentSearchService.updateDocumentAfterGenAI(saved);
 
             log.info("Document {} GenAI processing completed ({} chars summary)",
                     documentId, summaryText != null ? summaryText.length() : 0);
@@ -288,7 +301,11 @@ public class DocumentServiceImpl implements DocumentService {
 
             document.setProcessingStatus(Document.ProcessingStatus.GENAI_FAILED);
             document.setProcessingError(error);
-            repository.save(document);
+
+            final var saved = repository.save(document);
+
+            // Update status in ElasticSearch
+            documentSearchService.updateDocumentStatus(saved);
 
             log.error("Marked document {} as GENAI_FAILED: {}", documentId, error);
         } catch (final DocumentNotFoundException e) {
@@ -296,6 +313,22 @@ public class DocumentServiceImpl implements DocumentService {
         } catch (final Exception e) {
             log.error("Failed to mark document {} GenAI as failed: {}", documentId, e.getMessage());
             throw new DocumentProcessingException("Error marking GenAI as failed: " + documentId, e);
+        }
+    }
+
+    @Override
+    public List<DocumentSummaryDto> search(final String query) {
+        try {
+            // Delegate to search service
+            final var searchResults = documentSearchService.search(query);
+
+            // Map SearchDocuments to DTOs
+            return searchResults.stream()
+                    .map(mapper::toSummaryDto)
+                    .toList();
+        } catch (final Exception e) {
+            log.error("Failed to search documents for query '{}': {}", query, e.getMessage(), e);
+            throw new DocumentProcessingException("Error searching documents for query: " + query, e);
         }
     }
 }

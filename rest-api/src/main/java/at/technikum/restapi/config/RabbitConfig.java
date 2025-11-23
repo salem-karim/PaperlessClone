@@ -1,4 +1,4 @@
-package at.technikum.restapi.rabbitMQ;
+package at.technikum.restapi.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
