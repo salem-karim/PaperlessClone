@@ -1,4 +1,4 @@
-package at.technikum.restapi.persistence;
+package at.technikum.restapi.persistence.model;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -58,7 +58,7 @@ services:
 
       # RabbitMQ and MinIO (merge both common configs)
       <<: [*rabbitmq-common, *minio-common]
-      
+
       # RabbitMQ API-specific queues and routing keys
       OCR_QUEUE: documents.ocr.processing
       OCR_RESPONSE_QUEUE: documents.ocr.processing.response
@@ -83,8 +83,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-      # elasticsearch:
-      #   condition: service_started
+      elasticsearch:
+        condition: service_started
     networks:
       - paperless-net
 

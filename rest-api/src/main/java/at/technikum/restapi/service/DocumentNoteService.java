@@ -7,10 +7,10 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import at.technikum.restapi.persistence.Document;
-import at.technikum.restapi.persistence.DocumentNote;
-import at.technikum.restapi.persistence.DocumentNoteRepository;
-import at.technikum.restapi.persistence.DocumentRepository;
+import at.technikum.restapi.persistence.model.Document;
+import at.technikum.restapi.persistence.model.DocumentNote;
+import at.technikum.restapi.persistence.repository.DocumentNoteRepository;
+import at.technikum.restapi.persistence.repository.DocumentRepository;
 import at.technikum.restapi.service.dto.DocumentNoteDto;
 import at.technikum.restapi.service.exception.DocumentNotFoundException;
 import lombok.RequiredArgsConstructor;

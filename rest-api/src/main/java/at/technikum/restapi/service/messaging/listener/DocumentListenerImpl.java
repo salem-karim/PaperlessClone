@@ -1,4 +1,4 @@
-package at.technikum.restapi.rabbitMQ;
+package at.technikum.restapi.service.messaging.listener;
 
 import java.util.UUID;
 
@@ -6,8 +6,8 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
 import at.technikum.restapi.service.DocumentService;
-import at.technikum.restapi.service.dto.GenAIResponseDto;
-import at.technikum.restapi.service.dto.OcrResponseDto;
+import at.technikum.restapi.service.messaging.dto.GenAIResponseDto;
+import at.technikum.restapi.service.messaging.dto.OcrResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

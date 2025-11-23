@@ -1,9 +1,10 @@
 package at.technikum.restapi;
 
-import at.technikum.restapi.persistence.Document;
-import at.technikum.restapi.persistence.DocumentRepository;
-import at.technikum.restapi.rabbitMQ.DocumentPublisherImpl;
+import at.technikum.restapi.persistence.model.Document;
+import at.technikum.restapi.persistence.repository.DocumentRepository;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
+import at.technikum.restapi.service.messaging.publisher.DocumentPublisherImpl;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

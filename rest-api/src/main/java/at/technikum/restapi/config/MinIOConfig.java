@@ -1,4 +1,4 @@
-package at.technikum.restapi.miniIO;
+package at.technikum.restapi.config;
 
 import io.minio.MinioClient;
 import org.springframework.beans.factory.annotation.Value;

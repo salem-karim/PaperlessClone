@@ -32,8 +32,5 @@ public interface DocumentService {
 
     void markGenAIAsFailed(final UUID documentId, final String error);
 
-    /**
-     * Volltextsuche über Dokumente (Elasticsearch).
-     */
-    List<DocumentSummaryDto> search(final String query, final int page, final int size);
+    List<DocumentSummaryDto> search(final String query);
 }

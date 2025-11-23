@@ -7,8 +7,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import at.technikum.restapi.miniIO.MinioService;
 import at.technikum.restapi.service.DocumentService;
+import at.technikum.restapi.service.MinioService;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.OcrStatusDto;
@@ -21,8 +21,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-
 
 @Slf4j
 @RestController
@@ -38,9 +36,9 @@ public class DocumentController {
 
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<DocumentSummaryDto> uploadDocument(
-            @RequestParam("file") final MultipartFile file,
-            @RequestParam("title") final String title,
-            @RequestParam("createdAt") final Long createdAtMillis) {
+            @RequestParam final MultipartFile file,
+            @RequestParam final String title,
+            @RequestParam final Long createdAtMillis) {
         log.info("Received upload request: Title={}", title);
         final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAtMillis));
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
@@ -54,16 +52,11 @@ public class DocumentController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<List<DocumentSummaryDto>> searchDocuments(
-            @RequestParam("q") final String query,
-            @RequestParam(value = "page", defaultValue = "0") final int page,
-            @RequestParam(value = "size", defaultValue = "20") final int size) {
-
-        log.info("Received document search request: q='{}', page={}, size={}", query, page, size);
-        final var result = service.search(query, page, size);
+    public ResponseEntity<List<DocumentSummaryDto>> searchDocuments(@RequestParam final String query) {
+        log.info("Received document search request: q='{}'", query);
+        final var result = service.search(query);
         return ResponseEntity.ok(result);
     }
-
 
     @GetMapping("/{id}")
     public ResponseEntity<DocumentDetailDto> getById(@PathVariable final UUID id) {

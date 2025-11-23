@@ -1,4 +1,4 @@
-package at.technikum.restapi.persistence;
+package at.technikum.restapi.persistence.model;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -58,21 +58,20 @@ public class Document {
     @Builder.Default
     private ProcessingStatus processingStatus = ProcessingStatus.PENDING;
 
-    // OCR Text (inline if small, < 100KB)
+    // LAZY: Large text field - only for detail view/ElasticSearch backup
     @Lob
+    @Basic(fetch = FetchType.LAZY)
     @Column(columnDefinition = "TEXT")
     private String ocrText;
-    // MinIO reference for large OCR text (> 100KB)
-    private String ocrTextBucket; // e.g., "paperless-ocr-results"
 
-    private String ocrTextObjectKey; // e.g., "2024/10/uuid-ocr.txt"
-
-    // GenAI Summary Text
+    // LAZY: Large text field - only for detail view
     @Lob
+    @Basic(fetch = FetchType.LAZY)
     @Column(columnDefinition = "TEXT")
     private String summaryText;
 
-    // Error message for processing failures
+    // LAZY: Only needed when there's an error
+    @Basic(fetch = FetchType.LAZY)
     @Column(length = 1000)
     private String processingError;
 
