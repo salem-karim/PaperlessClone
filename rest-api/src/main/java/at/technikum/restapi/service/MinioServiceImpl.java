@@ -1,6 +1,5 @@
 package at.technikum.restapi.service;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
@@ -133,34 +132,6 @@ public class MinioServiceImpl implements MinioService {
         }
     }
 
-    @Override
-    public String uploadOcrText(final String documentId, final String ocrText) {
-        try {
-            ensureBucket(ocrTextBucketName);
-            final String objectKey = "ocr/" + documentId + ".txt";
-
-            final byte[] textBytes = ocrText.getBytes(StandardCharsets.UTF_8);
-            try (InputStream in = new ByteArrayInputStream(textBytes)) {
-                minioClient.putObject(
-                        PutObjectArgs.builder()
-                                .bucket(ocrTextBucketName)
-                                .object(objectKey)
-                                .stream(in, textBytes.length, -1)
-                                .contentType("text/plain; charset=utf-8")
-                                .build());
-            }
-
-            log.info("Uploaded OCR text '{}' to bucket '{}'", objectKey, ocrTextBucketName);
-            return objectKey;
-        } catch (final Exception e) {
-            throw new DocumentUploadException("Failed to upload OCR text to MinIO", e);
-        }
-    }
-
-    /**
-     * Generates a presigned URL using the external client
-     * This ensures the signature is calculated with the correct endpoint
-     */
     @Override
     public String generatePresignedUrl(final String objectKey, final int expiryMinutes) {
         try {

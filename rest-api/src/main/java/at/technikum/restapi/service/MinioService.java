@@ -6,17 +6,15 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface MinioService {
 
-    String uploadFile(MultipartFile file);
+    String uploadFile(final MultipartFile file);
 
-    InputStream downloadFile(String objectKey);
+    InputStream downloadFile(final String objectKey);
 
-    void deleteFile(String objectKey);
+    void deleteFile(final String objectKey);
 
-    String uploadOcrText(String documentId, String text);
+    String downloadOcrText(final String objectKey);
 
-    String downloadOcrText(String objectKey);
+    void deleteOcrText(final String objectKey);
 
-    void deleteOcrText(String objectKey);
-
-    String generatePresignedUrl(String objectKey, int expiryMinutes);
+    String generatePresignedUrl(final String objectKey, final int expiryMinutes);
 }

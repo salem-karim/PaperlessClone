@@ -139,10 +139,7 @@ public class DocumentServiceImpl implements DocumentService {
             final var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            return new OcrStatusDto(
-                    entity.getId(),
-                    entity.getProcessingStatus(),
-                    entity.getProcessingError());
+            return mapper.toOcrStatusDto(entity);
         } catch (final DataAccessException e) {
             throw new DocumentProcessingException("Error fetching OCR status for ID=" + id, e);
         }
