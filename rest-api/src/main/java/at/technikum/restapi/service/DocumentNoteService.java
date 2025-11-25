@@ -24,16 +24,16 @@ public class DocumentNoteService {
 
     @Transactional
     public DocumentNoteDto addNote(final UUID documentId, final String text) {
-        Document document = documentRepository.findById(documentId)
+        final Document document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
-        DocumentNote note = DocumentNote.builder()
+        final DocumentNote note = DocumentNote.builder()
                 .document(document)
                 .text(text)
                 .createdAt(Instant.now())
                 .build();
 
-        var saved = noteRepository.save(note);
+        final var saved = noteRepository.save(note);
 
         return DocumentNoteDto.builder()
                 .id(saved.getId())

@@ -45,8 +45,17 @@ public class RabbitConfig {
     @Value("${GENAI_ROUTING_KEY_RESPONSE:documents.genai.response}")
     private String genaiRoutingKeyResponse;
 
-    @Value("${RABBITMQ_HOST:localhost}")
+    @Value("${spring.rabbitmq.host:localhost}")
     private String rabbitHost;
+
+    @Value("${spring.rabbitmq.port:5672}")
+    private int rabbitPort;
+
+    @Value("${spring.rabbitmq.username:guest}")
+    private String rabbitUsername;
+
+    @Value("${spring.rabbitmq.password:guest}")
+    private String rabbitPassword;
 
     @Bean
     TopicExchange documentsExchange() {
@@ -99,7 +108,10 @@ public class RabbitConfig {
 
     @Bean
     ConnectionFactory connectionFactory() {
-        return new CachingConnectionFactory(rabbitHost);
+        CachingConnectionFactory factory = new CachingConnectionFactory(rabbitHost, rabbitPort);
+        factory.setUsername(rabbitUsername);
+        factory.setPassword(rabbitPassword);
+        return factory;
     }
 
     @Bean

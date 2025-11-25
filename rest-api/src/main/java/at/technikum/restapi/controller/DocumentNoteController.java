@@ -24,7 +24,7 @@ public class DocumentNoteController {
             @RequestBody final String text) {
 
         log.info("Adding note for document {}: {}", documentId, text);
-        var created = noteService.addNote(documentId, text);
+        final var created = noteService.addNote(documentId, text);
         return ResponseEntity.status(201).body(created);
     }
 
@@ -33,7 +33,7 @@ public class DocumentNoteController {
             @PathVariable final UUID documentId) {
 
         log.info("Listing notes for document {}", documentId);
-        var notes = noteService.listNotes(documentId);
+        final var notes = noteService.listNotes(documentId);
         return ResponseEntity.ok(notes);
     }
 }

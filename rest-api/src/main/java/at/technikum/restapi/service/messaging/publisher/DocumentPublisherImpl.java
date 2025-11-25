@@ -56,7 +56,7 @@ public class DocumentPublisherImpl implements DocumentPublisher {
             ocrText = ocrText.substring(0, SUMMARY_MAX_INPUT_LENGTH);
 
         // Use mapper to convert entity to GenAI request DTO
-        final var genaiRequest = mapper.toGenAIRequestDto(document);
+        final var genaiRequest = mapper.toGenAIRequestDto(document, ocrText);
 
         log.debug("GenAI Request payload: {}", genaiRequest);
 
