@@ -4,7 +4,6 @@ import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
-import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -44,18 +43,6 @@ public class RabbitConfig {
 
     @Value("${GENAI_ROUTING_KEY_RESPONSE:documents.genai.response}")
     private String genaiRoutingKeyResponse;
-
-    @Value("${spring.rabbitmq.host:localhost}")
-    private String rabbitHost;
-
-    @Value("${spring.rabbitmq.port:5672}")
-    private int rabbitPort;
-
-    @Value("${spring.rabbitmq.username:guest}")
-    private String rabbitUsername;
-
-    @Value("${spring.rabbitmq.password:guest}")
-    private String rabbitPassword;
 
     @Bean
     TopicExchange documentsExchange() {
@@ -104,14 +91,6 @@ public class RabbitConfig {
     @Bean
     Binding genaiResponseBinding(final Queue genaiResponseQueue, final TopicExchange documentsExchange) {
         return BindingBuilder.bind(genaiResponseQueue).to(documentsExchange).with(genaiRoutingKeyResponse);
-    }
-
-    @Bean
-    ConnectionFactory connectionFactory() {
-        CachingConnectionFactory factory = new CachingConnectionFactory(rabbitHost, rabbitPort);
-        factory.setUsername(rabbitUsername);
-        factory.setPassword(rabbitPassword);
-        return factory;
     }
 
     @Bean
