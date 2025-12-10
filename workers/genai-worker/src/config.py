@@ -9,7 +9,7 @@ class GenAIConfig(SharedConfig):
 
     # Google Gemini API
     GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
-    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     # Summarization Settings
     SUMMARY_MAX_INPUT_LENGTH = int(
