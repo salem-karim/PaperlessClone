@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: Batch-Processor
+
+batch:
+  input-dir: /tmp/access-logs/in
+  archive-dir: /tmp/access-logs/archive
+  file-pattern: "*.xml"
