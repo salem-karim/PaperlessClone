@@ -1,0 +1,514 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    tags:
+      - "v*"
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: "20"
+  JAVA_VERSION: "21"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ============================================================
+  # WEB UI - Lint, Test, Build
+  # ============================================================
+  webui:
+    name: WebUI - Lint, Test & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./webui
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: webui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Test
+        run: npm test -- --coverage
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./webui/coverage/lcov.info
+          flags: webui
+          name: webui-coverage
+        continue-on-error: true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: webui-dist
+          path: webui/dist
+          retention-days: 7
+
+  # ============================================================
+  # REST API - Lint, Test, Build
+  # ============================================================
+  rest-api:
+    name: REST API - Lint, Test & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./rest-api
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: "maven"
+
+      - name: Lint (Checkstyle)
+        run: mvn checkstyle:check
+
+      - name: Lint (SpotBugs)
+        run: mvn spotbugs:check
+
+      - name: Test
+        run: mvn test
+
+      - name: Build
+        run: mvn package -DskipTests
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: rest-api-jar
+          path: rest-api/target/*.jar
+          retention-days: 7
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./rest-api/target/site/jacoco/jacoco.xml
+          flags: rest-api
+          name: rest-api-coverage
+        continue-on-error: true
+
+  # ============================================================
+  # BATCH PROCESSOR - Lint, Test, Build
+  # ============================================================
+  batch-processor:
+    name: Batch Processor - Lint, Test & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./batch-processor
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: "maven"
+
+      - name: Lint (Checkstyle)
+        run: mvn checkstyle:check
+
+      - name: Lint (SpotBugs)
+        run: mvn spotbugs:check
+
+      - name: Test
+        run: mvn test
+
+      - name: Build
+        run: mvn package -DskipTests
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: batch-processor-jar
+          path: batch-processor/target/*.jar
+          retention-days: 7
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./batch-processor/target/site/jacoco/jacoco.xml
+          flags: batch-processor
+          name: batch-processor-coverage
+        continue-on-error: true
+
+  # ============================================================
+  # WORKERS - Shared Package
+  # ============================================================
+  workers-shared:
+    name: Workers - Shared Package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./workers/shared
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          uv pip install -e ".[dev]" --system
+
+      - name: Lint (Ruff)
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          uv run ruff check .
+
+      - name: Format check (Black)
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          uv run black --check .
+
+      - name: Type check (MyPy)
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          uv run mypy paperless_shared
+        continue-on-error: true
+
+      - name: Test
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          uv run pytest --cov=paperless_shared --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./workers/shared/coverage.xml
+          flags: workers-shared
+          name: workers-shared-coverage
+        continue-on-error: true
+
+  # ============================================================
+  # WORKERS - OCR Worker
+  # ============================================================
+  workers-ocr:
+    name: Workers - OCR Worker
+    runs-on: ubuntu-latest
+    needs: workers-shared
+    defaults:
+      run:
+        working-directory: ./workers
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install system dependencies (Tesseract)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y tesseract-ocr poppler-utils
+
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cd shared && uv pip install -e ".[dev]" --system
+          cd ../ocr-worker && uv pip install -e ../shared --system
+          uv pip install -e ".[dev]" --system
+
+      - name: Lint (Ruff)
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cd ocr-worker && uv run ruff check .
+
+      - name: Format check (Black)
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cd ocr-worker && uv run black --check .
+
+      - name: Test
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cd ocr-worker && uv run pytest --cov=src --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./workers/ocr-worker/coverage.xml
+          flags: workers-ocr
+          name: workers-ocr-coverage
+        continue-on-error: true
+
+  # ============================================================
+  # WORKERS - GenAI Worker
+  # ============================================================
+  workers-genai:
+    name: Workers - GenAI Worker
+    runs-on: ubuntu-latest
+    needs: workers-shared
+    defaults:
+      run:
+        working-directory: ./workers
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install UV
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cd shared && uv pip install -e ".[dev]" --system
+          cd ../genai-worker && uv pip install -e ../shared --system
+          uv pip install -e ".[dev]" --system
+
+      - name: Lint (Ruff)
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cd genai-worker && uv run ruff check .
+
+      - name: Format check (Black)
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cd genai-worker && uv run black --check .
+
+      - name: Test
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cd genai-worker && uv run pytest --cov=src --cov-report=xml
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./workers/genai-worker/coverage.xml
+          flags: workers-genai
+          name: workers-genai-coverage
+        continue-on-error: true
+
+  # ============================================================
+  # BUILD DOCKER IMAGES
+  # ============================================================
+  docker-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [webui, rest-api, batch-processor, workers-ocr, workers-genai]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          if [[ $GITHUB_REF == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "latest=true" >> $GITHUB_OUTPUT
+          else
+            echo "version=dev" >> $GITHUB_OUTPUT
+            echo "latest=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download WebUI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: webui-dist
+          path: webui/dist
+
+      - name: Download REST API JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: rest-api-jar
+          path: rest-api/target
+
+      - name: Download Batch Processor JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: batch-processor-jar
+          path: batch-processor/target
+
+      - name: Build and push WebUI image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./webui
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/paperless-webui:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.latest == 'true' && format('ghcr.io/{0}/paperless-webui:latest', github.repository_owner) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push REST API image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./rest-api
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/paperless-rest-api:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.latest == 'true' && format('ghcr.io/{0}/paperless-rest-api:latest', github.repository_owner) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Batch Processor image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./batch-processor
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/paperless-batch-processor:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.latest == 'true' && format('ghcr.io/{0}/paperless-batch-processor:latest', github.repository_owner) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push OCR Worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./workers
+          file: ./workers/ocr-worker/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/paperless-ocr-worker:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.latest == 'true' && format('ghcr.io/{0}/paperless-ocr-worker:latest', github.repository_owner) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push GenAI Worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./workers
+          file: ./workers/genai-worker/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/paperless-genai-worker:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.latest == 'true' && format('ghcr.io/{0}/paperless-genai-worker:latest', github.repository_owner) || '' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================================
+  # CREATE RELEASE
+  # ============================================================
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [docker-images]
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Create release notes
+        run: |
+          cat > release-notes.md << EOF
+          # PaperlessClone v${{ steps.version.outputs.version }}
+
+          ## 🚀 What's New
+
+          This release includes all components of the PaperlessClone document management system:
+
+          ### Components
+          - **WebUI**: Modern React-based user interface
+          - **REST API**: Spring Boot backend service
+          - **Batch Processor**: Document batch processing service
+          - **OCR Worker**: Optical Character Recognition worker
+          - **GenAI Worker**: AI-powered document summarization worker
+
+          ### Docker Images
+          All images are available at \`ghcr.io/${{ github.repository_owner }}/paperless-*:${{ steps.version.outputs.version }}\`
+
+          - \`ghcr.io/${{ github.repository_owner }}/paperless-webui:${{ steps.version.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/paperless-rest-api:${{ steps.version.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/paperless-batch-processor:${{ steps.version.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/paperless-ocr-worker:${{ steps.version.outputs.version }}\`
+          - \`ghcr.io/${{ github.repository_owner }}/paperless-genai-worker:${{ steps.version.outputs.version }}\`
+
+          ### 📦 Deployment
+
+          \`\`\`bash
+          # Pull all images
+          docker compose pull
+
+          # Start services
+          docker compose up -d
+          \`\`\`
+
+          ### 📝 Full Changelog
+          See commit history for detailed changes.
+          EOF
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release v${{ steps.version.outputs.version }}
+          body_path: release-notes.md
+          files: |
+            release-artifacts/**/*.jar
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

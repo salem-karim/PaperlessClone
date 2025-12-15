@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- 
+        EI_EXPOSE_REP2: Intentional design pattern
+        - Spring manages bean lifecycle and immutability
+        - Lombok @RequiredArgsConstructor generates constructor
+        - All injected services are Spring-managed singletons
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!-- 
+        DM_CONVERT_CASE: Not a localization issue
+        - File extensions (.pdf, .jpg) are ASCII-only
+        - MIME types (application/pdf) are ASCII-only
+        - No cultural/linguistic variation exists
+    -->
+    <Match>
+        <Bug pattern="DM_CONVERT_CASE"/>
+    </Match>
+
+    <!-- 
+        REC_CATCH_EXCEPTION: Third-party SDK limitation
+        - MinIO SDK methods declare 'throws Exception'
+        - Multiple exception types possible (IO, Security, etc.)
+        - We wrap in domain-specific exceptions anyway
+    -->
+    <Match>
+        <Class name="at.technikum.restapi.service.MinioServiceImpl"/>
+        <Bug pattern="REC_CATCH_EXCEPTION"/>
+    </Match>
+</FindBugsFilter>
