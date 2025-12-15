@@ -5,6 +5,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.Key;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -46,14 +47,14 @@ public class AccessLogImportService {
     @Value("classpath:xsd/access-log.xsd")
     private Resource xsdResource;
 
-    @Scheduled(cron = "0 0 1 * * *")
+    @Scheduled(cron = "${batch.import-cron:0 0 1 * * *}")
     public void importAccessLogs() throws IOException {
-
         log.info("Starting access log import");
 
         Files.createDirectories(archiveDir);
+        Files.createDirectories(inputDir);
 
-        final Map<Key, Integer> aggregatedCounts = new HashMap<>();
+        final Map<Key, AggregatedEntry> aggregatedCounts = new HashMap<>();
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(inputDir, "*.xml")) {
             for (final Path file : stream) {
@@ -63,15 +64,10 @@ public class AccessLogImportService {
                     validateXml(file);
 
                     final AccessLogXml logXml = xmlMapper.readValue(file.toFile(), AccessLogXml.class);
-
-                    logXml.entries().forEach(entry -> {
-                        final Key key = new Key(entry.documentId(), logXml.date());
-                        aggregatedCounts.merge(key, entry.accessCount(), Integer::sum);
-                    });
+                    processFile(logXml, aggregatedCounts);
 
                     archive(file);
                     log.info("Archived file {}", file.getFileName());
-
                 } catch (final Exception e) {
                     log.warn("File {} is invalid and will be moved to failed", file.getFileName(), e);
 
@@ -79,9 +75,9 @@ public class AccessLogImportService {
                     Files.createDirectories(failedDir);
 
                     Files.move(
-                            file,
-                            failedDir.resolve(file.getFileName()),
-                            StandardCopyOption.REPLACE_EXISTING);
+                        file,
+                        failedDir.resolve(file.getFileName()),
+                        StandardCopyOption.REPLACE_EXISTING);
                 }
             }
         }
@@ -90,29 +86,49 @@ public class AccessLogImportService {
         log.info("Access log import finished");
     }
 
-    @Transactional
-    public void persist(final Map<Key, Integer> aggregatedCounts) {
-        aggregatedCounts.forEach((key, count) -> {
-            final DocumentDailyAccess entity = repository.findByDocumentIdAndAccessDate(
-                    key.documentId(),
-                    key.date()).orElseGet(
-                            () -> DocumentDailyAccess.builder()
-                                    .documentId(key.documentId())
-                                    .accessDate(key.date())
-                                    .accessCount(0)
-                                    .createdAt(LocalDateTime.now())
-                                    .build());
+    private void processFile(AccessLogXml logXml, Map<Key, AggregatedEntry> aggregated) {
+        logXml.entries().forEach(entry -> {
+            Key key = new Key(entry.documentId(), logXml.date());
+            aggregated.merge(
+                key,
+                new AggregatedEntry(entry.accessCount(), logXml.source()),
+                (left, right) -> left.add(right));
+        });
+    }
 
-            entity.setAccessCount(entity.getAccessCount() + count);
+    @Transactional
+    public void persist(Map<Key, AggregatedEntry> aggregated) {
+        aggregated.forEach((key, payload) -> {
+            DocumentDailyAccess entity = repository
+                .findByDocumentIdAndAccessDate(key.documentId(), key.date())
+                .orElseGet(() -> DocumentDailyAccess.builder()
+                    .documentId(key.documentId())
+                    .accessDate(key.date())
+                    .accessCount(0)
+                    .createdAt(LocalDateTime.now())
+                    .build());
+
+            entity.setAccessCount(entity.getAccessCount() + payload.count());
+            if (payload.source() != null) {
+                entity.setSource(payload.source());
+            }
             repository.save(entity);
         });
     }
 
+    private record AggregatedEntry(int count, String source) {
+        AggregatedEntry add(AggregatedEntry other) {
+            int newCount = this.count + other.count;
+            String newSource = other.source != null ? other.source : this.source;
+            return new AggregatedEntry(newCount, newSource);
+        }
+    }
+
     private void archive(final Path file) throws IOException {
         Files.move(
-                file,
-                archiveDir.resolve(file.getFileName()),
-                StandardCopyOption.REPLACE_EXISTING);
+            file,
+            archiveDir.resolve(file.getFileName()),
+            StandardCopyOption.REPLACE_EXISTING);
     }
 
     private void validateXml(final Path xmlFile) throws Exception {
