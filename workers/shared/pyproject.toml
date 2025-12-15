@@ -1,8 +1,72 @@
 [project]
 name = "paperless-shared"
 version = "0.1.0"
+description = "Shared utilities for Paperless workers"
 requires-python = ">=3.11"
 dependencies = [
     "pika>=1.3.2",
     "minio>=7.2.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
 ]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.3",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.21.1",
+    "pytest-mock>=3.12.0",
+    "ruff>=0.1.9",
+    "mypy>=1.7.1",
+    "black>=23.12.1",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=paperless_shared --cov-report=term-missing --cov-report=html"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = false
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+warn_no_return = true
+strict_equality = true
+
+# Allow missing imports for libraries without type stubs
+[[tool.mypy.overrides]]
+module = ["pika", "pika.*", "minio", "minio.*"]
+ignore_missing_imports = true

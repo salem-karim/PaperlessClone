@@ -1,6 +1,5 @@
 """OCR Worker Data Models and DTOs"""
 
-from typing import Optional
 from paperless_shared.models import AbstractRequestDto, AbstractResponseDto
 
 
@@ -25,7 +24,7 @@ class OcrResponseDto(AbstractResponseDto, total=False):
     """
 
     # For small text (< 100KB)
-    ocr_text: Optional[str]
+    ocr_text: str | None
 
     # For large text stored in MinIO
-    ocr_text_object_key: Optional[str]  # Just the key, bucket is implied
+    ocr_text_object_key: str | None  # Just the key, bucket is implied

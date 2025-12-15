@@ -3,8 +3,8 @@
 import logging
 import sys
 
-from paperless_shared.rabbitmq_client import RabbitMQClient
 from paperless_shared.minio_client import MinioClient
+from paperless_shared.rabbitmq_client import RabbitMQClient
 
 from .config import GenAIConfig
 from .genAI_service import GenAIService
@@ -46,7 +46,7 @@ def main():
             rabbitmq_client=rabbitmq_client,
             minio_client=minio_client,
             genai_service=genai_service,
-            config=config
+            config=config,
         )
 
         # Connect to RabbitMQ

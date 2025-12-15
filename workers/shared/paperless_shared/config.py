@@ -15,15 +15,9 @@ class SharedConfig:
 
     # RabbitMQ Queues (worker-specific via env vars)
     RABBITMQ_QUEUE = os.getenv("RABBITMQ_QUEUE", "documents.processing")
-    RABBITMQ_RESPONSE_QUEUE = os.getenv(
-        "RABBITMQ_RESPONSE_QUEUE", f"{RABBITMQ_QUEUE}.response"
-    )
-    RABBITMQ_ROUTING_KEY_REQUEST = os.getenv(
-        "RABBITMQ_ROUTING_KEY_REQUEST", "documents.request"
-    )
-    RABBITMQ_ROUTING_KEY_RESPONSE = os.getenv(
-        "RABBITMQ_ROUTING_KEY_RESPONSE", "documents.response"
-    )
+    RABBITMQ_RESPONSE_QUEUE = os.getenv("RABBITMQ_RESPONSE_QUEUE", f"{RABBITMQ_QUEUE}.response")
+    RABBITMQ_ROUTING_KEY_REQUEST = os.getenv("RABBITMQ_ROUTING_KEY_REQUEST", "documents.request")
+    RABBITMQ_ROUTING_KEY_RESPONSE = os.getenv("RABBITMQ_ROUTING_KEY_RESPONSE", "documents.response")
 
     # MinIO Connection
     MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
@@ -32,12 +26,8 @@ class SharedConfig:
     MINIO_SECURE = os.getenv("MINIO_SECURE", "false").lower() == "true"
 
     # MinIO Buckets
-    MINIO_DOCUMENTS_BUCKET = os.getenv(
-        "MINIO_DOCUMENTS_BUCKET", "paperless-documents"
-    )
-    MINIO_OCR_TEXT_BUCKET = os.getenv(
-        "MINIO_OCR_TEXT_BUCKET", "paperless-ocr-text"
-    )
+    MINIO_DOCUMENTS_BUCKET = os.getenv("MINIO_DOCUMENTS_BUCKET", "paperless-documents")
+    MINIO_OCR_TEXT_BUCKET = os.getenv("MINIO_OCR_TEXT_BUCKET", "paperless-ocr-text")
 
     # Logging
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")

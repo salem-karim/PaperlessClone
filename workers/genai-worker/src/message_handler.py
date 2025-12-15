@@ -1,12 +1,12 @@
 """GenAI Worker Message Handler"""
 
 import logging
-from typing import Optional
 
 from paperless_shared.abstract_handler import AbstractMessageHandler
-from .models import GenAIRequestDto, GenAIResponseDto
-from .genAI_service import GenAIService
+
 from .config import GenAIConfig
+from .genAI_service import GenAIService
+from .models import GenAIRequestDto, GenAIResponseDto
 
 logger = logging.getLogger(__name__)
 
@@ -25,16 +25,18 @@ class GenAIMessageHandler(AbstractMessageHandler[GenAIRequestDto, GenAIResponseD
         self.genai_service = genai_service
         self.config: GenAIConfig = config
 
-    def _process_message(self, message: GenAIRequestDto) -> Optional[GenAIResponseDto]:
+    def _publish_response(self, response: GenAIResponseDto) -> None:
+        """Publish the response to RabbitMQ"""
+        self.rabbitmq.publish_response(response)
+
+    def _process_message(self, message: GenAIRequestDto) -> GenAIResponseDto | None:
         """Process GenAI request: get OCR text and generate summary"""
         doc_id = message.get("document_id", "unknown")
 
         # Validate required fields
         if not doc_id:
             logger.error("Missing required field: document_id")
-            return self._create_error_response(
-                "unknown", "Missing required field: document_id"
-            )
+            return self._create_error_response("unknown", "Missing required field: document_id")
 
         try:
             # Get OCR text (either inline or from MinIO)
@@ -43,9 +45,7 @@ class GenAIMessageHandler(AbstractMessageHandler[GenAIRequestDto, GenAIResponseD
 
             if ocr_text:
                 # Text was sent inline
-                logger.info(
-                    f"Using inline OCR text for document {doc_id} ({len(ocr_text)} chars)"
-                )
+                logger.info(f"Using inline OCR text for document {doc_id} ({len(ocr_text)} chars)")
             elif ocr_text_object_key:
                 # Text is stored in MinIO - download it
                 logger.info(
@@ -85,7 +85,5 @@ class GenAIMessageHandler(AbstractMessageHandler[GenAIRequestDto, GenAIResponseD
         except Exception as e:
             # Generic error
             error_msg = f"GenAI processing failed: {str(e)}"
-            logger.error(
-                f"Failed processing document {doc_id}: {error_msg}", exc_info=True
-            )
+            logger.error(f"Failed processing document {doc_id}: {error_msg}", exc_info=True)
             return self._create_error_response(doc_id, error_msg)

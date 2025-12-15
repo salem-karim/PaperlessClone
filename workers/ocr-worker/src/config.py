@@ -1,6 +1,7 @@
 """OCR Worker specific configuration"""
 
 import os
+
 from paperless_shared.config import SharedConfig
 
 
