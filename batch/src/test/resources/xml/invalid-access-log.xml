@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<access-log source="external-system-A">
+  <entry>
+    <documentId>not-a-uuid</documentId>
+  </entry>
+</access-log>

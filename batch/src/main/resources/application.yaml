@@ -1,8 +1,23 @@
 spring:
   application:
     name: Batch-Processor
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:testdb}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
 
 batch:
-  input-dir: /tmp/access-logs/in
-  archive-dir: /tmp/access-logs/archive
-  file-pattern: "*.xml"
+  input-dir: ${BATCH_INPUT_DIR:/tmp/access-logs/input}
+  archive-dir: ${BATCH_ARCHIVE_DIR:/tmp/access-logs/input}
+  import-cron: "0 0 1 * * *" # every day at 1 AM
+  # import-cron: '0/10 * * * * *' # every 10 seconds for testing
+
+logging:
+  level:
+    root: INFO
+    at.technikum.Batch_Processor: DEBUG
