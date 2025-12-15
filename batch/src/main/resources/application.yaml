@@ -2,7 +2,16 @@ spring:
   application:
     name: Batch-Processor
 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
 batch:
-  input-dir: /tmp/access-logs/in
-  archive-dir: /tmp/access-logs/archive
-  file-pattern: "*.xml"
+  input-dir: ${BATCH_INPUT_DIR:/tmp/access-logs/input}
+  archive-dir: ${BATCH_ARCHIVE_DIR:/tmp/access-logs/input}
+
+logging:
+  level:
+    root: INFO
+    at.technikum.Batch_Processor: DEBUG
