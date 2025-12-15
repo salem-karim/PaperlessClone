@@ -12,6 +12,7 @@ env:
   NODE_VERSION: "20"
   JAVA_VERSION: "21"
   PYTHON_VERSION: "3.11"
+  BUN_VERSION: "latest"
 
 jobs:
   # ============================================================
@@ -28,25 +29,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          bun-version: ${{ env.BUN_VERSION }}
 
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint
+        run: bun run lint
 
       - name: Type check
-        run: npm run type-check
+        run: bun run type-check
 
       - name: Test
-        run: npm test -- --coverage
+        run: bun test --coverage
 
       - name: Build
-        run: npm run build
+        run: bun run build
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -377,7 +378,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: batch-processor-jar
-          path: batch-processor/target
+          path: batch/target
 
       - name: Build and push WebUI image
         uses: docker/build-push-action@v5
@@ -404,7 +405,7 @@ jobs:
       - name: Build and push Batch Processor image
         uses: docker/build-push-action@v5
         with:
-          context: ./batch-processor
+          context: ./batch
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/paperless-batch-processor:${{ steps.meta.outputs.version }}
