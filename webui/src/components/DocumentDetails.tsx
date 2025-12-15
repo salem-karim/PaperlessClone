@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import {
   getDocumentById,
@@ -24,13 +24,17 @@ const LOCALE = "de-AT";
 
 export default function DocumentDetails() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [document, setDocument] = useState<DocumentDetailDto | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const navigate = useNavigate();
+
+  // Get the previous search query from location state
+  const previousSearch = (location.state as { from?: string })?.from || "/";
 
   // Load document once
   useEffect(() => {
@@ -117,8 +121,8 @@ export default function DocumentDetails() {
       return;
     }
 
-    // Navigate to home after successful deletion
-    navigate("/");
+    // Navigate back to previous search or home
+    navigate(previousSearch);
   };
 
   const handleDownload = async () => {
@@ -203,7 +207,7 @@ export default function DocumentDetails() {
 
         <div className="flex flex-col items-end gap-2">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate(previousSearch)} // ← Use previousSearch instead of "/"
             className="p-2 bg-gray-300 dark:bg-gray-700 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition"
             title="Home"
           >
@@ -295,20 +299,21 @@ export default function DocumentDetails() {
             <ReactMarkdown
               components={{
                 // Customize code blocks
-                code: ({ node, inline, className, children, ...props }) => {
-                  return inline ? (
+                code: ({ className, children, ...props }) => {
+                  const match = /language-(\w+)/.exec(className || '');
+                  return match ? (
+                    <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    </pre>
+                  ) : (
                     <code
                       className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-sm font-mono"
                       {...props}
                     >
                       {children}
                     </code>
-                  ) : (
-                    <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
-                      <code className={className} {...props}>
-                        {children}
-                      </code>
-                    </pre>
                   );
                 },
                 // Style headings

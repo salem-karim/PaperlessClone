@@ -1,7 +1,8 @@
 """MinIO client for file operations"""
 
-import logging
 import io
+import logging
+
 from minio import Minio
 from minio.error import S3Error
 
@@ -23,10 +24,10 @@ class MinioClient:
         )
         self.documents_bucket = config.MINIO_DOCUMENTS_BUCKET
         self.ocr_results_bucket = config.MINIO_OCR_TEXT_BUCKET
-        
+
         self._ensure_buckets()
 
-    def _ensure_buckets(self):
+    def _ensure_buckets(self) -> None:
         """Ensure required buckets exist"""
         for bucket in [self.documents_bucket, self.ocr_results_bucket]:
             try:
@@ -81,7 +82,7 @@ class MinioClient:
             logger.info(f"Uploading text to {object_key} in bucket {bucket}")
             text_bytes = text.encode("utf-8")
             data = io.BytesIO(text_bytes)
-            
+
             self.client.put_object(
                 bucket,
                 object_key,
@@ -89,9 +90,7 @@ class MinioClient:
                 length=len(text_bytes),
                 content_type="text/plain; charset=utf-8",
             )
-            logger.info(
-                f"Uploaded {len(text_bytes)} bytes to {object_key} in {bucket}"
-            )
+            logger.info(f"Uploaded {len(text_bytes)} bytes to {object_key} in {bucket}")
         except S3Error as e:
             logger.error(f"Failed to upload text to {object_key}: {e}")
             raise

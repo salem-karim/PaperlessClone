@@ -3,7 +3,7 @@ package at.technikum.restapi.service.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-import at.technikum.restapi.persistence.Document.ProcessingStatus;
+import at.technikum.restapi.persistence.model.Document.ProcessingStatus;
 import lombok.Builder;
 
 @Builder
@@ -18,8 +18,6 @@ public record DocumentDetailDto(
         Instant createdAt,
         String downloadUrl, // Presigned URL to download original file from MinIO
         ProcessingStatus processingStatus,
-        String ocrText, // Inline OCR text if available and small
-        String ocrTextDownloadUrl, // Presigned URL if OCR text is stored in MinIO
         String summaryText, // AI-generated summary
         String processingError, // Error message if any step failed
         Instant ocrProcessedAt,

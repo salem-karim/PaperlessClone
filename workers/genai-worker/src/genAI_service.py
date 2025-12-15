@@ -1,7 +1,9 @@
 import logging
 import re
+
 from google import genai
 from google.genai import types
+
 from .config import GenAIConfig
 
 logger = logging.getLogger(__name__)
@@ -63,7 +65,6 @@ class GenAIService:
             # Use template from config
             prompt = self.config.SUMMARY_PROMPT_TEMPLATE.format(text=truncated_text)
 
-            logger.info(f"This is the prompt used: {prompt}")
             # Generate content using the new SDK
             response = self.client.models.generate_content(
                 model=self.config.GEMINI_MODEL,
@@ -76,8 +77,6 @@ class GenAIService:
                     response_modalities=["TEXT"],
                 ),
             )
-
-            logger.info(f"Received Response from Gemini: {response}")
 
             # Extract text from response
             if response and response.text:

@@ -7,8 +7,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import at.technikum.restapi.miniIO.MinioService;
 import at.technikum.restapi.service.DocumentService;
+import at.technikum.restapi.service.MinioService;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.OcrStatusDto;
@@ -36,11 +36,11 @@ public class DocumentController {
 
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<DocumentSummaryDto> uploadDocument(
-            @RequestParam("file") final MultipartFile file,
-            @RequestParam("title") final String title,
-            @RequestParam("createdAt") final Long createdAtMillis) {
+            @RequestParam final MultipartFile file,
+            @RequestParam final String title,
+            @RequestParam final Long createdAt) {
         log.info("Received upload request: Title={}", title);
-        final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAtMillis));
+        final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAt));
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
     }
 
@@ -49,6 +49,13 @@ public class DocumentController {
         log.debug("Fetching all documents");
         final var documents = service.getAll();
         return ResponseEntity.ok(documents);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<DocumentSummaryDto>> searchDocuments(@RequestParam("q") final String query) {
+        log.info("Received document search request: q='{}'", query);
+        final var result = service.search(query);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/{id}")

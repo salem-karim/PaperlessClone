@@ -3,11 +3,11 @@ import logging
 import math
 import os
 import time
-from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
+from pathlib import Path
 
-import pytesseract
 import pymupdf
+import pytesseract
 from PIL import Image
 
 logger = logging.getLogger(__name__)
@@ -72,7 +72,7 @@ class OcrService:
             SMALL_PDF_THRESHOLD_BYTES = 512 * 1024  # 512KB
 
             # Get total pages without converting everything
-            from PyPDF2 import PdfReader
+            from pypdf import PdfReader
 
             pdf_reader = PdfReader(io.BytesIO(pdf_data))
             total_pages = len(pdf_reader.pages)
@@ -80,8 +80,7 @@ class OcrService:
 
             # Decide if we should parallelize page conversion
             use_parallel = (
-                total_pages > SMALL_PDF_THRESHOLD_PAGES
-                or len(pdf_data) > SMALL_PDF_THRESHOLD_BYTES
+                total_pages > SMALL_PDF_THRESHOLD_PAGES or len(pdf_data) > SMALL_PDF_THRESHOLD_BYTES
             )
 
             start_time = time.time()
@@ -98,9 +97,7 @@ class OcrService:
                 ]
 
             conversion_time = time.time() - start_time
-            logger.info(
-                f"Converted PDF to {len(images)} images in {conversion_time:.2f}s"
-            )
+            logger.info(f"Converted PDF to {len(images)} images in {conversion_time:.2f}s")
 
             # OCR (parallel/sequential) as before
             index_image_pairs = list(enumerate(images, start=1))
@@ -108,15 +105,11 @@ class OcrService:
             start_time = time.time()
             if use_parallel_ocr:
                 with ProcessPoolExecutor(max_workers=cpu_count) as executor:
-                    results = list(
-                        executor.map(OcrService._ocr_page, index_image_pairs)
-                    )
+                    results = list(executor.map(OcrService._ocr_page, index_image_pairs))
             else:
                 results = [OcrService._ocr_page(pair) for pair in index_image_pairs]
 
-            combined_text = "\n\n".join(
-                f"--- Page {i} ---\n{text}" for i, text in results
-            ).strip()
+            combined_text = "\n\n".join(f"--- Page {i} ---\n{text}" for i, text in results).strip()
             conversion_time = time.time() - start_time
             logger.info(
                 f"OCR complete: {len(combined_text)} chars from {len(images)} pages in {conversion_time:.2f}s"
@@ -127,9 +120,7 @@ class OcrService:
             logger.error(f"Failed to process PDF: {e}")
             raise
 
-    def process_document(
-        self, file_data: bytes, content_type: str, filename: str
-    ) -> str:
+    def process_document(self, file_data: bytes, content_type: str, filename: str) -> str:
         """Determine file type and run appropriate OCR"""
         try:
             file_ext = Path(filename).suffix.lower()
@@ -141,9 +132,7 @@ class OcrService:
                 logger.info(f"Processing PDF file: {filename}")
                 return self._process_pdf(file_data)
             else:
-                raise ValueError(
-                    f"Unsupported file type: {content_type} (extension: {file_ext})"
-                )
+                raise ValueError(f"Unsupported file type: {content_type} (extension: {file_ext})")
 
         except Exception as e:
             logger.error(f"Failed to process document {filename}: {e}")

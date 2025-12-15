@@ -1,0 +1,157 @@
+package at.technikum.restapi.service;
+
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import at.technikum.restapi.service.exception.DocumentProcessingException;
+import at.technikum.restapi.service.exception.DocumentUploadException;
+import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
+import io.minio.GetPresignedObjectUrlArgs;
+import io.minio.MakeBucketArgs;
+import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
+import io.minio.RemoveObjectArgs;
+import io.minio.http.Method;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+@RequiredArgsConstructor
+@Service
+public class MinioServiceImpl implements MinioService {
+
+    private final MinioClient minioClient;
+
+    @Value("${minio.documents-bucket:paperless-documents}")
+    private String bucketName;
+
+    @Value("${minio.ocr-text-bucket:paperless-ocr-text}")
+    private String ocrTextBucketName;
+
+    private void ensureBucket(final String bucket) {
+        try {
+            final boolean exists = minioClient.bucketExists(
+                    BucketExistsArgs.builder().bucket(bucket).build());
+            if (!exists) {
+                minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+                log.info("Created bucket '{}'", bucket);
+            }
+        } catch (final Exception e) {
+            throw new DocumentUploadException("Failed to ensure bucket: " + bucket, e);
+        }
+    }
+
+    @Override
+    public String uploadFile(final MultipartFile file) {
+        try {
+            ensureBucket(bucketName);
+            final String objectKey = UUID.randomUUID() + "-" + file.getOriginalFilename();
+
+            try (InputStream in = file.getInputStream()) {
+                minioClient.putObject(
+                        PutObjectArgs.builder()
+                                .bucket(bucketName)
+                                .object(objectKey)
+                                .stream(in, file.getSize(), -1)
+                                .contentType(file.getContentType())
+                                .build());
+            }
+
+            log.info("Uploaded document '{}' to bucket '{}'", objectKey, bucketName);
+            return objectKey;
+        } catch (final Exception e) {
+            throw new DocumentUploadException("Failed to upload document to MinIO", e);
+        }
+    }
+
+    @Override
+    public InputStream downloadFile(final String objectKey) {
+        try {
+            log.info("Downloading file: {}/{}", bucketName, objectKey);
+            return minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .build());
+        } catch (final Exception e) {
+            throw new DocumentProcessingException(
+                    "Failed to download file from MinIO: " + objectKey, e);
+        }
+    }
+
+    @Override
+    public void deleteFile(final String objectKey) {
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .build());
+            log.info("Deleted object '{}' from bucket '{}'", objectKey, bucketName);
+        } catch (final Exception e) {
+            log.warn("Failed to delete object '{}' from bucket '{}': {}",
+                    objectKey, bucketName, e.getMessage());
+        }
+    }
+
+    @Override
+    public void deleteOcrText(final String objectKey) {
+        try {
+            minioClient.removeObject(
+                    RemoveObjectArgs.builder()
+                            .bucket(ocrTextBucketName)
+                            .object(objectKey)
+                            .build());
+            log.info("Deleted OCR text '{}' from bucket '{}'", objectKey, ocrTextBucketName);
+        } catch (final Exception e) {
+            log.warn("Failed to delete OCR text '{}' from bucket '{}': {}",
+                    objectKey, ocrTextBucketName, e.getMessage());
+        }
+    }
+
+    @Override
+    public String downloadOcrText(final String objectKey) {
+        try {
+            ensureBucket(ocrTextBucketName);
+            try (InputStream stream = minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(ocrTextBucketName)
+                            .object(objectKey)
+                            .build())) {
+                return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            }
+        } catch (final Exception e) {
+            throw new DocumentProcessingException(
+                    "Failed to download OCR text from MinIO: " + objectKey, e);
+        }
+    }
+
+    @Override
+    public String generatePresignedUrl(final String objectKey, final int expiryMinutes) {
+        try {
+            String presignedUrl = minioClient.getPresignedObjectUrl(
+                    GetPresignedObjectUrlArgs.builder()
+                            .method(Method.GET)
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .expiry(expiryMinutes * 60)
+                            .build());
+
+            if (!presignedUrl.contains("localhost:9000")) {
+                presignedUrl = presignedUrl.replace("http://minio:9000/", "http://localhost:8000/minio/");
+            }
+
+            log.debug("Generated presigned URL for {}: {}", objectKey, presignedUrl);
+            return presignedUrl;
+        } catch (final Exception e) {
+            log.error("Failed to generate presigned URL for {}: {}", objectKey, e.getMessage());
+            throw new DocumentUploadException("Failed to generate presigned URL for " + objectKey, e);
+        }
+    }
+}

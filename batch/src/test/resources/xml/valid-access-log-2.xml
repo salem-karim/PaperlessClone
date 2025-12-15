@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<access-log date="2025-12-13" source="external-system-B">
+  <entry>
+    <documentId>11111111-1111-1111-1111-111111111111</documentId>
+    <accessCount>3</accessCount>
+  </entry>
+</access-log>

@@ -3,12 +3,12 @@
 import logging
 import sys
 
-from paperless_shared.rabbitmq_client import RabbitMQClient
 from paperless_shared.minio_client import MinioClient
+from paperless_shared.rabbitmq_client import RabbitMQClient
 
 from .config import OcrConfig
-from .ocr_service import OcrService
 from .message_handler import OcrMessageHandler
+from .ocr_service import OcrService
 
 # Configure logging
 logging.basicConfig(
@@ -46,7 +46,7 @@ def main():
             rabbitmq_client=rabbitmq_client,
             minio_client=minio_client,
             ocr_service=ocr_service,
-            config=config
+            config=config,
         )
 
         # Connect to RabbitMQ

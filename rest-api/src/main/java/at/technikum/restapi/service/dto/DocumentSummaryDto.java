@@ -3,7 +3,7 @@ package at.technikum.restapi.service.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-import at.technikum.restapi.persistence.Document.ProcessingStatus;
+import at.technikum.restapi.persistence.model.Document.ProcessingStatus;
 import lombok.Builder;
 
 @Builder

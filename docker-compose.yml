@@ -35,6 +35,25 @@ services:
     networks:
       - paperless-net
 
+  batch-processing:
+    build: ./batch
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/paperless
+      SPRING_DATASOURCE_USERNAME: paperless
+      SPRING_DATASOURCE_PASSWORD: secret
+      BATCH_INPUT_DIR: /var/paperless/batch/in
+      BATCH_ARCHIVE_DIR: /var/paperless/batch/archive
+      # BATCH_INPUT_DIR: /tmp/access-logs/input/
+      # BATCH_ARCHIVE_DIR: /tmp/access-logs/archive/
+    volumes:
+      - ./batch/input:/var/paperless/batch/in
+      - ./batch/archive:/var/paperless/batch/archive
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - paperless-net
+
   webui:
     build: ./webui
     expose:
@@ -54,11 +73,14 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/paperless
       SPRING_DATASOURCE_USERNAME: paperless
       SPRING_DATASOURCE_PASSWORD: secret
+
+      # ElasticSearch
       SPRING_ELASTICSEARCH_URIS: http://elasticsearch:9200
+      ELASTICSEARCH_LOG_LEVEL: INFO
 
       # RabbitMQ and MinIO (merge both common configs)
       <<: [*rabbitmq-common, *minio-common]
-      
+
       # RabbitMQ API-specific queues and routing keys
       OCR_QUEUE: documents.ocr.processing
       OCR_RESPONSE_QUEUE: documents.ocr.processing.response
@@ -83,8 +105,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-      # elasticsearch:
-      #   condition: service_started
+      elasticsearch:
+        condition: service_healthy
     networks:
       - paperless-net
 
@@ -183,6 +205,7 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # Limit memory usage
     ports:
       - "9200:9200"
       - "9092:5601"
@@ -190,6 +213,13 @@ services:
       - esdata:/usr/share/elasticsearch/data
     networks:
       - paperless-net
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
 volumes:
   pgdata:

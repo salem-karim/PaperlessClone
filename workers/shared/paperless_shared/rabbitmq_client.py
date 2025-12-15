@@ -1,8 +1,9 @@
 """RabbitMQ client for connection and messaging"""
 
 import json
+from collections.abc import Callable
 from logging import getLogger
-from typing import Callable, Optional, Dict, Any
+from typing import Any
 
 import pika
 from pika.adapters.blocking_connection import BlockingChannel, BlockingConnection
@@ -17,8 +18,8 @@ class RabbitMQClient:
 
     def __init__(self, config: SharedConfig):
         self.config = config
-        self.connection: Optional[BlockingConnection] = None
-        self.channel: Optional[BlockingChannel] = None
+        self.connection: BlockingConnection | None = None
+        self.channel: BlockingChannel | None = None
 
     def connect(self) -> None:
         """Establish connection to RabbitMQ"""
@@ -86,7 +87,7 @@ class RabbitMQClient:
             logger.info("Received shutdown signal, stopping...")
             self.stop()
 
-    def publish_response(self, response: Dict[str, Any]) -> None:
+    def publish_response(self, response: dict[str, Any]) -> None:
         """Publish a response message"""
         if self.channel is None:
             logger.error("Cannot publish: not connected")

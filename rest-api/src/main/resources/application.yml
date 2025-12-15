@@ -8,13 +8,32 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
   mvc:
     servlet:
       path: /api/v1
+  # ElasticSearch configuration
+  elasticsearch:
+    uris: ${SPRING_ELASTICSEARCH_URIS:http://localhost:9200}
+    username: ${SPRING_ELASTICSEARCH_USERNAME:}
+    password: ${SPRING_ELASTICSEARCH_PASSWORD:}
+    connection-timeout: 5s
+    socket-timeout: 30s
+  # Disable ElasticSearch health check (optional, for development)
+  data:
+    elasticsearch:
+      repositories:
+        enabled: true
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
 springdoc:
   api-docs:
     path: /api-docs
+
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
   external-endpoint: ${MINIO_EXTERNAL_ENDPOINT:http://localhost:9000}
@@ -22,3 +41,9 @@ minio:
   secret-key: ${MINIO_SECRET_KEY:paperless123}
   documents-bucket: ${MINIO_DOCUMENTS_BUCKET:paperless-documents}
   ocr-text-bucket: ${MINIO_OCR_TEXT_BUCKET:paperless-ocr-text}
+
+# Logging configuration
+logging:
+  level:
+    org.springframework.data.elasticsearch: ${ELASTICSEARCH_LOG_LEVEL:INFO}
+    co.elastic.clients: ${ELASTICSEARCH_LOG_LEVEL:INFO}
