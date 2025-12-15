@@ -6,7 +6,7 @@ on:
     tags:
       - "v*"
   pull_request:
-    branches: [main, develop]
+    branches: [main, dev]
 
 env:
   NODE_VERSION: "20"
@@ -32,8 +32,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
-          cache-dependency-path: webui/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -121,7 +119,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./batch-processor
+        working-directory: ./batch
 
     steps:
       - name: Checkout code
@@ -150,13 +148,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: batch-processor-jar
-          path: batch-processor/target/*.jar
+          path: batch/target/*.jar
           retention-days: 7
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
-          files: ./batch-processor/target/site/jacoco/jacoco.xml
+          files: ./batch/target/site/jacoco/jacoco.xml
           flags: batch-processor
           name: batch-processor-coverage
         continue-on-error: true
