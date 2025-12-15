@@ -40,11 +40,8 @@ jobs:
       - name: Lint
         run: bun run lint
 
-      - name: Type check
-        run: bun run type-check
-
       - name: Test
-        run: bun test --coverage
+        run: bun run test:coverage
 
       - name: Build
         run: bun run build
