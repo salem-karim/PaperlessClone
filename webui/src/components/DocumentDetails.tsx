@@ -299,20 +299,21 @@ export default function DocumentDetails() {
             <ReactMarkdown
               components={{
                 // Customize code blocks
-                code: ({ node, inline, className, children, ...props }) => {
-                  return inline ? (
+                code: ({ className, children, ...props }) => {
+                  const match = /language-(\w+)/.exec(className || '');
+                  return match ? (
+                    <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
+                      <code className={className} {...props}>
+                        {children}
+                      </code>
+                    </pre>
+                  ) : (
                     <code
                       className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 rounded text-sm font-mono"
                       {...props}
                     >
                       {children}
                     </code>
-                  ) : (
-                    <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
-                      <code className={className} {...props}>
-                        {children}
-                      </code>
-                    </pre>
                   );
                 },
                 // Style headings

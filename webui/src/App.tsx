@@ -64,6 +64,7 @@ export default function App() {
   }
 
   useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
     const query = urlParams.get("q")?.trim() ?? "";
 
     if (!query) {
@@ -71,6 +72,7 @@ export default function App() {
     } else {
       loadSearch(query);
     }
+     
   }, [location.search]);
 
   async function handleDelete(id: string) {
