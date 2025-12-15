@@ -41,7 +41,7 @@ import static org.mockito.Mockito.doNothing;
 class RabbitMQIntegrationTest {
 
     @Container
-    static RabbitMQContainer rabbitmqContainer = new RabbitMQContainer("rabbitmq:3-management")
+    static final RabbitMQContainer rabbitmqContainer = new RabbitMQContainer("rabbitmq:3-management")
             .waitingFor(Wait.forLogMessage(".*Server startup complete.*", 1)
                     .withStartupTimeout(Duration.ofSeconds(60)));
 
@@ -145,7 +145,7 @@ class RabbitMQIntegrationTest {
     // ========== Consumer Tests (Workers -> REST API) ==========
 
     @Test
-    void testOcrResultConsumer_successWithInlineText() throws Exception {
+    void testOcrResultConsumer_successWithInlineText() {
         // Given - simulate OCR worker sending completed response with inline text
         // Status is "completed" as per DocumentListenerImpl
         OcrResponseDto ocrResponse = OcrResponseDto.builder()
@@ -169,7 +169,7 @@ class RabbitMQIntegrationTest {
     }
 
     @Test
-    void testOcrResultConsumer_failure() throws Exception {
+    void testOcrResultConsumer_failure() {
         // Given - simulate OCR worker sending failure response
         // Status is "failed" as per DocumentListenerImpl
         OcrResponseDto ocrResponse = OcrResponseDto.builder()
@@ -193,7 +193,7 @@ class RabbitMQIntegrationTest {
     }
 
     @Test
-    void testOcrResultConsumer_completedButNoTextProvided() throws Exception {
+    void testOcrResultConsumer_completedButNoTextProvided() {
         // Given - simulate edge case where worker sends completed but no text or reference
         OcrResponseDto ocrResponse = OcrResponseDto.builder()
                 .documentId(testDocument.getId().toString())
@@ -215,7 +215,7 @@ class RabbitMQIntegrationTest {
     }
 
     @Test
-    void testGenAIResultConsumer_success() throws Exception {
+    void testGenAIResultConsumer_success() {
         // Given - document with completed OCR processing
         testDocument.setOcrText("Some OCR text");
         testDocument.setProcessingStatus(Document.ProcessingStatus.OCR_COMPLETED);
@@ -243,7 +243,7 @@ class RabbitMQIntegrationTest {
     }
 
     @Test
-    void testGenAIResultConsumer_failure() throws Exception {
+    void testGenAIResultConsumer_failure() {
         // Given - document with completed OCR processing
         testDocument.setOcrText("Some OCR text");
         testDocument.setProcessingStatus(Document.ProcessingStatus.OCR_COMPLETED);
@@ -271,7 +271,7 @@ class RabbitMQIntegrationTest {
     }
 
     @Test
-    void testGenAIResultConsumer_completedButNoSummary() throws Exception {
+    void testGenAIResultConsumer_completedButNoSummary() {
         // Given - document with completed OCR processing
         testDocument.setOcrText("Some OCR text");
         testDocument.setProcessingStatus(Document.ProcessingStatus.OCR_COMPLETED);

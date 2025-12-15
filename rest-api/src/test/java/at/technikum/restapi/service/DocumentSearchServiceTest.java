@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
 class DocumentSearchServiceTest {
 
@@ -40,7 +41,7 @@ class DocumentSearchServiceTest {
 
     private Document testDocument;
     private SearchDocument testSearchDocument;
-
+    
     @BeforeEach
     void setUp() {
         testDocument = Document.builder()

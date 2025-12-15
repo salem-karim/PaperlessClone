@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.*;
 class MinioServiceIntegrationTest {
 
     @Container
-    static MinIOContainer minioContainer = new MinIOContainer("minio/minio:RELEASE.2023-09-04T19-57-37Z")
+    static final MinIOContainer minioContainer = new MinIOContainer("minio/minio:RELEASE.2023-09-04T19-57-37Z")
             .withUserName("minioadmin")
             .withPassword("minioadmin");
 
@@ -104,7 +104,7 @@ class MinioServiceIntegrationTest {
     }
 
     @Test
-    void testUploadFile_differentFileTypes() throws Exception {
+    void testUploadFile_differentFileTypes() {
         // Test PNG
         MockMultipartFile pngFile = new MockMultipartFile(
                 "file", "image.png", "image/png", "PNG data".getBytes()
@@ -172,7 +172,7 @@ class MinioServiceIntegrationTest {
     }
 
     @Test
-    void testGeneratePresignedUrl_success() throws Exception {
+    void testGeneratePresignedUrl_success() {
         // Given - upload a file first
         MockMultipartFile file = new MockMultipartFile(
                 "file",
