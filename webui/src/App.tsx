@@ -54,6 +54,8 @@ export default function App() {
       searchQuery = q.replace(/tags:\s*[^\s]+/g, '').trim();
     }
     
+    console.log('Search params:', { originalQuery: q, searchQuery, categories });
+    
     const [docs, error] = await tryCatch<DocumentSummaryDto[]>(
       searchDocuments(searchQuery, categories.length > 0 ? categories : undefined),
     );

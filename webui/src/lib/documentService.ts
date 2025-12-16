@@ -140,6 +140,8 @@ export async function searchDocuments(query: string, categories?: string[]): Pro
     url += `&${categoryParams}`;
   }
   
+  console.log('Search URL:', url, 'Categories:', categories);
+  
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Search failed: HTTP ${res.status}`);
   return res.json() as Promise<DocumentSummaryDto[]>;

@@ -361,4 +361,20 @@ public class DocumentServiceImpl implements DocumentService {
             throw new DocumentProcessingException("Error searching documents for query: " + query, e);
         }
     }
+
+    public void reindexAllDocuments() {
+        log.info("Starting reindex of all documents...");
+        try {
+            final var allDocuments = repository.findAll();
+            int count = 0;
+            for (final Document doc : allDocuments) {
+                documentSearchService.indexDocumentMetadata(doc);
+                count++;
+            }
+            log.info("✓ Successfully reindexed {} documents", count);
+        } catch (final Exception e) {
+            log.error("✗ Failed to reindex documents: {}", e.getMessage(), e);
+            throw new DocumentProcessingException("Failed to reindex documents", e);
+        }
+    }
 }

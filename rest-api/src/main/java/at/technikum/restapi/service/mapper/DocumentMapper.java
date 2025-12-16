@@ -47,7 +47,7 @@ public interface DocumentMapper {
             return Collections.emptyList();
         }
         return categories.stream()
-            .map(Category::getName)
+            .map(cat -> cat.getName().toLowerCase())
             .collect(Collectors.toList());
     }
 

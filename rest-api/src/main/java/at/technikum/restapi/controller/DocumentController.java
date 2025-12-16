@@ -63,9 +63,11 @@ public class DocumentController {
     @GetMapping("/search")
     public ResponseEntity<List<DocumentSummaryDto>> searchDocuments(@RequestParam("q") final String query,
             @RequestParam(required = false) final List<String> categories) {
-        log.info("Received document search request: q='{}'", query);
+        log.info("Received document search request: q='{}', categories={}", query, categories);
         final List<String> safeCategories = categories != null ? categories : Collections.emptyList();
+        log.debug("Safe categories: {}", safeCategories);
         final var result = service.search(query, safeCategories);
+        log.info("Search returned {} results", result.size());
         return ResponseEntity.ok(result);
     }
 
@@ -133,5 +135,12 @@ public class DocumentController {
         log.info("Received delete request: ID={}", id);
         service.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reindex")
+    public ResponseEntity<Map<String, String>> reindexAllDocuments() {
+        log.info("Received reindex request");
+        service.reindexAllDocuments();
+        return ResponseEntity.ok(Map.of("status", "success", "message", "All documents reindexed"));
     }
 }

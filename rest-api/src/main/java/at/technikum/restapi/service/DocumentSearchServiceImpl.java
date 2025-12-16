@@ -128,6 +128,9 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         final boolean hasQuery = queryString != null && !queryString.isBlank();
         final boolean hasCategories = categoryNames != null && !categoryNames.isEmpty();
 
+        log.info("Search parameters: queryString='{}', categoryNames={}, hasQuery={}, hasCategories={}",
+                queryString, categoryNames, hasQuery, hasCategories);
+
         if (!hasQuery && !hasCategories) {
             log.info("Empty search query and no categories provided, return empty results");
             return Collections.emptyList();
@@ -150,6 +153,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
                             final List<String> lowercaseCategoryNames = categoryNames.stream()
                                     .map(String::toLowerCase)
                                     .toList();
+                            log.info("Searching for categories (after lowercase): {}", lowercaseCategoryNames);
                             b.filter(f -> f.terms(t -> t
                                     .field("categoryNames")
                                     .terms(v -> v.value(toFieldValues(lowercaseCategoryNames)))));

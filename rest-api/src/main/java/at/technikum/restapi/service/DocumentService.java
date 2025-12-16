@@ -34,4 +34,6 @@ public interface DocumentService {
     void markGenAIAsFailed(final UUID documentId, final String error);
 
     List<DocumentSummaryDto> search(final String query, final List<String> categoryNames);
+
+    void reindexAllDocuments();
 }
