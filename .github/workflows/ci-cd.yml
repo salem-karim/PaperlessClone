@@ -336,6 +336,12 @@ jobs:
       contents: write
 
     steps:
+      - name: Debug - Show ref
+        run: |
+          echo "github.ref: ${{ github.ref }}"
+          echo "github.ref_name: ${{ github.ref_name }}"
+          echo "github.ref_type: ${{ github.ref_type }}"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -364,21 +370,9 @@ jobs:
           - **OCR Worker**: Optical Character Recognition worker
           - **GenAI Worker**: AI-powered document summarization worker
 
-          ### Docker Images
-          All images are available at \`ghcr.io/${{ github.repository_owner }}/paperless-*:${{ steps.version.outputs.version }}\`
-
-          - \`ghcr.io/${{ github.repository_owner }}/paperless-webui:${{ steps.version.outputs.version }}\`
-          - \`ghcr.io/${{ github.repository_owner }}/paperless-rest-api:${{ steps.version.outputs.version }}\`
-          - \`ghcr.io/${{ github.repository_owner }}/paperless-batch-processor:${{ steps.version.outputs.version }}\`
-          - \`ghcr.io/${{ github.repository_owner }}/paperless-ocr-worker:${{ steps.version.outputs.version }}\`
-          - \`ghcr.io/${{ github.repository_owner }}/paperless-genai-worker:${{ steps.version.outputs.version }}\`
-
           ### 📦 Deployment
 
           \`\`\`bash
-          # Pull all images
-          docker compose pull
-
           # Start services
           docker compose up -d
           \`\`\`
