@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import at.technikum.restapi.service.DocumentService;
 import at.technikum.restapi.service.MinioService;
+import at.technikum.restapi.service.dto.CategoryDto;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.OcrStatusDto;
@@ -46,9 +47,10 @@ public class DocumentController {
     public ResponseEntity<DocumentSummaryDto> uploadDocument(
             @RequestParam final MultipartFile file,
             @RequestParam final String title,
-            @RequestParam final Long createdAt) {
+            @RequestParam final Long createdAt,
+            @RequestParam final List<CategoryDto> categories) {
         log.info("Received upload request: Title={}", title);
-        final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAt));
+        final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAt), categories);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
     }
 

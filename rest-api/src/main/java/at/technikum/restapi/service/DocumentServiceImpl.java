@@ -1,6 +1,7 @@
 package at.technikum.restapi.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -10,12 +11,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import at.technikum.restapi.persistence.model.Document;
 import at.technikum.restapi.persistence.repository.DocumentRepository;
+import at.technikum.restapi.service.dto.CategoryDto;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.OcrStatusDto;
 import at.technikum.restapi.service.exception.DocumentNotFoundException;
 import at.technikum.restapi.service.exception.DocumentProcessingException;
 import at.technikum.restapi.service.exception.InvalidDocumentException;
+import at.technikum.restapi.service.mapper.CategoryMapper;
 import at.technikum.restapi.service.mapper.DocumentMapper;
 import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository repository;
     private final DocumentMapper mapper;
+    private final CategoryMapper categoryMapper;
     private final DocumentPublisher publisher;
     private final MinioService minioService;
     private final DocumentSearchService documentSearchService;
@@ -53,7 +57,8 @@ public class DocumentServiceImpl implements DocumentService {
             ".gif");
 
     @Override
-    public DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt) {
+    public DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt,
+            List<CategoryDto> categories) {
         if (file == null || file.isEmpty()) {
             throw new InvalidDocumentException("No file provided");
         }
@@ -92,6 +97,7 @@ public class DocumentServiceImpl implements DocumentService {
                     .createdAt(createdAt)
                     .fileSize(file.getSize())
                     .processingStatus(Document.ProcessingStatus.PENDING)
+                    .categories(categories.stream().map(categoryMapper::toEntity).toList())
                     .build();
 
             // Save to PostgreSQL

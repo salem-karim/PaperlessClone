@@ -6,13 +6,15 @@ import java.util.UUID;
 
 import org.springframework.web.multipart.MultipartFile;
 
+import at.technikum.restapi.service.dto.CategoryDto;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.OcrStatusDto;
 
 public interface DocumentService {
 
-    DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt);
+    DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt,
+            List<CategoryDto> categories);
 
     List<DocumentSummaryDto> getAll();
 
