@@ -11,7 +11,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import at.technikum.restapi.persistence.model.Document;
 import at.technikum.restapi.persistence.repository.DocumentRepository;
-import at.technikum.restapi.service.dto.CategoryDto;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.WorkerStatusDto;
@@ -169,7 +168,8 @@ public class DocumentServiceImpl implements DocumentService {
             var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            if (updateDoc.title() != null && !updateDoc.title().trim().isBlank() && !updateDoc.title().equals(entity.getTitle())) {
+            if (updateDoc.title() != null && !updateDoc.title().trim().isBlank()
+                    && !updateDoc.title().equals(entity.getTitle())) {
                 entity.setTitle(updateDoc.title());
             }
             if (updateDoc.categories() != null) {

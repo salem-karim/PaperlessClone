@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import org.springframework.web.multipart.MultipartFile;
 
-import at.technikum.restapi.service.dto.CategoryDto;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.dto.WorkerStatusDto;

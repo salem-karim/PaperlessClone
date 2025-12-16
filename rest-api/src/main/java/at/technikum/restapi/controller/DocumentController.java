@@ -26,7 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import at.technikum.restapi.service.DocumentService;
 import at.technikum.restapi.service.MinioService;
-import at.technikum.restapi.service.dto.CategoryDto;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import lombok.RequiredArgsConstructor;

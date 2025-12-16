@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import at.technikum.restapi.persistence.model.Category;
 import at.technikum.restapi.persistence.model.Document.ProcessingStatus;
 import lombok.Builder;
 

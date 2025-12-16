@@ -5,7 +5,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.security.Key;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -75,9 +74,9 @@ public class AccessLogImportService {
                     Files.createDirectories(failedDir);
 
                     Files.move(
-                        file,
-                        failedDir.resolve(file.getFileName()),
-                        StandardCopyOption.REPLACE_EXISTING);
+                            file,
+                            failedDir.resolve(file.getFileName()),
+                            StandardCopyOption.REPLACE_EXISTING);
                 }
             }
         }
@@ -90,9 +89,9 @@ public class AccessLogImportService {
         logXml.entries().forEach(entry -> {
             Key key = new Key(entry.documentId(), logXml.date());
             aggregated.merge(
-                key,
-                new AggregatedEntry(entry.accessCount(), logXml.source()),
-                (left, right) -> left.add(right));
+                    key,
+                    new AggregatedEntry(entry.accessCount(), logXml.source()),
+                    (left, right) -> left.add(right));
         });
     }
 
@@ -100,13 +99,13 @@ public class AccessLogImportService {
     public void persist(Map<Key, AggregatedEntry> aggregated) {
         aggregated.forEach((key, payload) -> {
             DocumentDailyAccess entity = repository
-                .findByDocumentIdAndAccessDate(key.documentId(), key.date())
-                .orElseGet(() -> DocumentDailyAccess.builder()
-                    .documentId(key.documentId())
-                    .accessDate(key.date())
-                    .accessCount(0)
-                    .createdAt(LocalDateTime.now())
-                    .build());
+                    .findByDocumentIdAndAccessDate(key.documentId(), key.date())
+                    .orElseGet(() -> DocumentDailyAccess.builder()
+                            .documentId(key.documentId())
+                            .accessDate(key.date())
+                            .accessCount(0)
+                            .createdAt(LocalDateTime.now())
+                            .build());
 
             entity.setAccessCount(entity.getAccessCount() + payload.count());
             if (payload.source() != null) {
@@ -126,9 +125,9 @@ public class AccessLogImportService {
 
     private void archive(final Path file) throws IOException {
         Files.move(
-            file,
-            archiveDir.resolve(file.getFileName()),
-            StandardCopyOption.REPLACE_EXISTING);
+                file,
+                archiveDir.resolve(file.getFileName()),
+                StandardCopyOption.REPLACE_EXISTING);
     }
 
     private void validateXml(final Path xmlFile) throws Exception {
