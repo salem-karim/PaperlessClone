@@ -35,12 +35,17 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
             // Map to SearchDocument (ocrText and summaryText will be null initially)
             final SearchDocument searchDocument = mapper.toSearchDocument(document);
 
-            searchDocumentRepository.save(searchDocument);
-            log.info("Indexed document metadata {} in ElasticSearch (status: {})",
+            log.debug("Indexing new document in Elasticsearch: ID={}, title={}, categories={}",
+                    document.getId(), document.getTitle(),
+                    document.getCategories() != null ? document.getCategories().size() : 0);
+
+            final SearchDocument saved = searchDocumentRepository.save(searchDocument);
+            log.info("✓ Indexed document metadata {} in ElasticSearch (status: {})",
                     document.getId(), document.getProcessingStatus());
         } catch (final Exception e) {
-            log.error("Failed to index document metadata {} in ElasticSearch: {}",
+            log.error("✗ FAILED to index document metadata {} in ElasticSearch: {}",
                     document.getId(), e.getMessage(), e);
+            log.error("Elasticsearch error stack trace:", e);
             // Don't throw - indexing failure shouldn't block the main workflow
         }
     }
@@ -50,14 +55,20 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         try {
             final SearchDocument searchDocument = mapper.toSearchDocument(document);
 
-            searchDocumentRepository.save(searchDocument);
-            log.info("Updated document {} in ElasticSearch after OCR (status: {}, text: {} chars)",
+            log.debug("Saving to Elasticsearch: document ID={}, ocrText length={}, categories={}",
+                    document.getId(),
+                    document.getOcrText() != null ? document.getOcrText().length() : 0,
+                    document.getCategories() != null ? document.getCategories().size() : 0);
+
+            final SearchDocument saved = searchDocumentRepository.save(searchDocument);
+            log.info("✓ Updated document {} in ElasticSearch after OCR (status: {}, text: {} chars)",
                     document.getId(),
                     document.getProcessingStatus(),
                     document.getOcrText() != null ? document.getOcrText().length() : 0);
         } catch (final Exception e) {
-            log.error("Failed to update document {} in ElasticSearch after OCR: {}",
+            log.error("✗ FAILED to update document {} in ElasticSearch after OCR: {}",
                     document.getId(), e.getMessage(), e);
+            log.error("Elasticsearch error stack trace:", e);
         }
     }
 
@@ -66,14 +77,20 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         try {
             final SearchDocument searchDocument = mapper.toSearchDocument(document);
 
-            searchDocumentRepository.save(searchDocument);
-            log.info("Updated document {} in ElasticSearch after GenAI (status: {}, summary: {} chars)",
+            log.debug("Saving to Elasticsearch: document ID={}, summaryText length={}, categories={}",
+                    document.getId(),
+                    document.getSummaryText() != null ? document.getSummaryText().length() : 0,
+                    document.getCategories() != null ? document.getCategories().size() : 0);
+
+            final SearchDocument saved = searchDocumentRepository.save(searchDocument);
+            log.info("✓ Updated document {} in ElasticSearch after GenAI (status: {}, summary: {} chars)",
                     document.getId(),
                     document.getProcessingStatus(),
                     document.getSummaryText() != null ? document.getSummaryText().length() : 0);
         } catch (final Exception e) {
-            log.error("Failed to update document {} in ElasticSearch after GenAI: {}",
+            log.error("✗ FAILED to update document {} in ElasticSearch after GenAI: {}",
                     document.getId(), e.getMessage(), e);
+            log.error("Elasticsearch error stack trace:", e);
         }
     }
 
@@ -82,12 +99,16 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
         try {
             final SearchDocument searchDocument = mapper.toSearchDocument(document);
 
-            searchDocumentRepository.save(searchDocument);
-            log.info("Updated document {} status in ElasticSearch: {}",
+            log.debug("Saving status to Elasticsearch: document ID={}, status={}",
+                    document.getId(), document.getProcessingStatus());
+
+            final SearchDocument saved = searchDocumentRepository.save(searchDocument);
+            log.info("✓ Updated document {} status in ElasticSearch: {}",
                     document.getId(), document.getProcessingStatus());
         } catch (final Exception e) {
-            log.error("Failed to update document {} status in ElasticSearch: {}",
+            log.error("✗ FAILED to update document {} status in ElasticSearch: {}",
                     document.getId(), e.getMessage(), e);
+            log.error("Elasticsearch error stack trace:", e);
         }
     }
 

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import at.technikum.restapi.persistence.model.Document;
@@ -214,9 +215,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional
     public void updateOcrResult(final UUID documentId, final String ocrText, final String ocrTextObjectKey) {
         try {
-            final var document = repository.findById(documentId)
+            // Use findWithCategoriesById to eagerly fetch categories for Elasticsearch indexing
+            final var document = repository.findWithCategoriesById(documentId)
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
             document.setProcessingStatus(Document.ProcessingStatus.OCR_COMPLETED);
@@ -265,9 +268,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional
     public void markOcrAsFailed(final UUID documentId, final String error) {
         try {
-            final var document = repository.findById(documentId)
+            // Use findWithCategoriesById to eagerly fetch categories for Elasticsearch indexing
+            final var document = repository.findWithCategoriesById(documentId)
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
             document.setProcessingStatus(Document.ProcessingStatus.OCR_FAILED);
@@ -288,9 +293,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional
     public void updateGenAIResult(final UUID documentId, final String summaryText) {
         try {
-            final var document = repository.findById(documentId)
+            // Use findWithCategoriesById to eagerly fetch categories for Elasticsearch indexing
+            final var document = repository.findWithCategoriesById(documentId)
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
             document.setProcessingStatus(Document.ProcessingStatus.COMPLETED);
@@ -313,9 +320,11 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
+    @Transactional
     public void markGenAIAsFailed(final UUID documentId, final String error) {
         try {
-            final var document = repository.findById(documentId)
+            // Use findWithCategoriesById to eagerly fetch categories for Elasticsearch indexing
+            final var document = repository.findWithCategoriesById(documentId)
                     .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
             document.setProcessingStatus(Document.ProcessingStatus.GENAI_FAILED);
