@@ -1,34 +1,113 @@
 # PaperlessClone
-FH-Technikum Wien SWEN3 Project Paperless Clone
 
-## Running the whole project
+FH-Technikum Wien SWEN3 Project - Paperless Clone
 
-To start all components (webui, rest-api, ocr-worker) in detached mode:
+## Architecture Overview
+
+This project is a document management system built with a microservices architecture:
+
+### Services
+
+- **WebUI** – React + Vite frontend served by Nginx (includes reverse proxy)
+- **REST API** – Spring Boot backend serving as the central access point
+- **OCR Worker** – Python-based worker for optical character recognition
+- **GenAI Worker** – Python-based worker for AI-powered document summarization
+- **Batch Processor** – Processes access logs in batches
+
+### Infrastructure
+
+- **RabbitMQ** – Message queue for worker communication
+- **MinIO** – S3-compatible object storage for document files
+- **PostgreSQL** – Relational database for metadata (accessed only by REST API)
+- **Elasticsearch** – Search index for document metadata
+
+### Quality Assurance
+
+- **Testing**: Unit and integration tests for REST API and Batch Processor
+- **CI/CD**: GitHub Actions pipeline for automated testing and deployment
+- **Linting**:
+  - WebUI: ESLint
+  - REST API & Batch Processor: Checkstyle & SpotBugs
+  - Workers: mypy & ruff
+
+## Running the Project
+
+### Start All Services
+
+To start all components in detached mode:
 
 ```bash
 docker compose up -d
-````
+```
 
-This will start the following services:
+This will start:
+- `webui` (accessible at http://localhost:80)
+- `rest-api` (accessible at http://localhost:8080)
+- `ocr-worker`
+- `genai-worker`
+- `batch-processor`
+- Supporting infrastructure (RabbitMQ, MinIO, PostgreSQL, Elasticsearch)
 
-* **webui** – the frontend web interface
-* **rest-api** – the backend REST API
-* **ocr-worker** – the OCR processing worker
-* **genAI-worker** – the AI Summarization worker
-* **batch** – the Batch Processor for Access Logs
+### Stop All Services
 
----
-
-The WebUI is using React + Vite for the frontend and using NginX as a WebServer and Reverse Proxy
-The API is built using Spring-Boot and connects to the Workers via a RabbitMQ Queueing Service
-The Document Files are stored in a MinIO Bucket Storage and the Metadata in a PostgreSQL Database as well as indexed in a ElasticSearch Storage container
-The Workers are written in python and use a shared module for abstract custom RabbitMQ and MinIO Clients
-Only the API accesses the PostgreSQL Database and can be considered as the central point
-For the API as well as the Batch Processor Unit & Integration Tests have been written and tested using a GitHub Actions CI/CD Pipeline
-Also linting is ran in the Pipeline for all 3 different spaces (WebUI using eslint, API and Batch Processor using checkstyles and the workers using mypy and ruff)
-
-Felix's Cheatsheet:
-
-Dockerfile builden -> wenn änderungen gemacht wurden
-Docker compose starten -> servicces starten (docker desktop muss offen sein)
 ```bash
+docker compose down
+```
+
+### View Logs
+
+```bash
+# All services
+docker compose logs -f
+
+# Specific service
+docker compose logs -f rest-api
+```
+
+### Rebuild After Changes
+
+If you've made changes to the code:
+
+```bash
+docker compose up -d --build
+```
+
+## Development
+
+### Prerequisites
+
+- Docker Desktop (must be running)
+- Node.js 20+ (for local WebUI development)
+- Java 21+ (for local REST API development)
+- Python 3.11+ (for local worker development)
+
+### Local Development
+
+#### WebUI
+```bash
+cd webui
+bun install
+bun run dev
+```
+
+#### REST API
+```bash
+cd rest-api
+./mvnw spring-boot:run
+```
+
+#### Workers
+```bash
+cd workers
+pip install -e ./shared
+cd ocr-worker
+pip install -r requirements.txt
+python -m workers.ocr_worker.main
+```
+
+## Quick Reference (Felix's Cheatsheet)
+
+1. **After code changes**: Rebuild Dockerfile
+2. **To start services**: Run `docker compose up -d` (Docker Desktop must be running)
+3. **To view logs**: Run `docker compose logs -f [service-name]`
+4. **To stop services**: Run `docker compose down`
