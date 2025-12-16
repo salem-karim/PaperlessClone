@@ -1,13 +1,18 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { createDocument } from "../lib/documentService";
-import { tryCatch } from "../lib/utils";
+import { getCategories } from "../lib/categoryService";
+import { tryCatch, getContrastColor } from "../lib/utils";
+import type { CategoryDto } from "../lib/types";
+import { CategoryIcon } from "../lib/iconMapping";
 
 export default function DocumentForm() {
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
   const [file, setFile] = useState<File>();
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<CategoryDto[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<CategoryDto[]>([]);
   const navigate = useNavigate();
 
   const SUPPORTED_MIME_TYPES = [
@@ -20,6 +25,26 @@ export default function DocumentForm() {
     "image/gif",
   ];
 
+  // Load categories on mount
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  async function loadCategories() {
+    const [cats, err] = await tryCatch(getCategories());
+    if (err) console.error(err);
+    else if (cats) setCategories(cats);
+  }
+
+  function toggleCategory(cat: CategoryDto) {
+    const isSelected = selectedCategories.some((c) => c.id === cat.id);
+    if (isSelected) {
+      setSelectedCategories(selectedCategories.filter((c) => c.id !== cat.id));
+    } else {
+      setSelectedCategories([...selectedCategories, cat]);
+    }
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!title.trim() || !file) {
@@ -31,7 +56,7 @@ export default function DocumentForm() {
       return;
     }
     setLoading(true);
-    const [, err] = await tryCatch(createDocument({ title, file }));
+    const [, err] = await tryCatch(createDocument({ title, file, categories: selectedCategories }));
     setLoading(false);
     if (err) setError("Failed to upload document.");
     else navigate("/");
@@ -69,6 +94,49 @@ export default function DocumentForm() {
             Supported formats: PDF, PNG, JPG, JPEG, TIFF, BMP, GIF
           </p>
         </div>
+
+        {/* Categories Selection */}
+        <div className="flex flex-col gap-2">
+          <label className="font-semibold">Categories (Optional)</label>
+          {categories.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No categories available.{" "}
+              <button
+                type="button"
+                onClick={() => navigate("/categories")}
+                className="text-blue-500 hover:underline"
+              >
+                Create one
+              </button>
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => {
+                const isSelected = selectedCategories.some((c) => c.id === cat.id);
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => toggleCategory(cat)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition flex items-center gap-1 ${
+                      isSelected
+                        ? "ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800"
+                        : "opacity-70 hover:opacity-100 hover:scale-105"
+                    }`}
+                    style={{
+                      backgroundColor: cat.color,
+                      color: getContrastColor(cat.color),
+                    }}
+                  >
+                    <CategoryIcon iconName={cat.icon} />
+                    {cat.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         {error && <p className="text-red-500">{error}</p>}
 
         <div className="flex gap-4 mt-4 justify-end-safe">

@@ -14,7 +14,7 @@ import at.technikum.restapi.service.dto.WorkerStatusDto;
 public interface DocumentService {
 
     DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt,
-            List<CategoryDto> categories);
+            List<String> categoryIds);
 
     List<DocumentSummaryDto> getAll();
 

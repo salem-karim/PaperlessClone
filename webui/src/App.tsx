@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaPlus } from "react-icons/fa6";
+import { FaPlus, FaTags } from "react-icons/fa6";
 
 import {
   getDocuments,
@@ -41,8 +41,21 @@ export default function App() {
 
   async function loadSearch(q: string) {
     setLoading(true);
+    
+    // Parse query for tags: syntax
+    const tagMatch = q.match(/tags:\s*([^\s]+)/);
+    let categories: string[] = [];
+    let searchQuery = q;
+    
+    if (tagMatch) {
+      // Extract category names from tags:work,private,etc
+      categories = tagMatch[1].split(',').map(c => c.trim()).filter(c => c);
+      // Remove tags: part from the search query
+      searchQuery = q.replace(/tags:\s*[^\s]+/g, '').trim();
+    }
+    
     const [docs, error] = await tryCatch<DocumentSummaryDto[]>(
-      searchDocuments(q),
+      searchDocuments(searchQuery, categories.length > 0 ? categories : undefined),
     );
     setLoading(false);
 
@@ -87,17 +100,27 @@ export default function App() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center gap-4 mb-4">
-        <h1 className="text-3xl font-bold">Documents</h1>
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+      <div className="mb-4">
+        <div className="flex items-center gap-4 mb-3">
+          <h1 className="text-2xl sm:text-3xl font-bold">Documents</h1>
 
-        <Link
-          to="/documents/new"
-          className="p-2 hover:bg-blue-100 dark:hover:bg-blue-600 rounded-full flex items-center justify-center transition"
-          title="Upload new document"
-        >
-          <FaPlus className="text-xl text-black dark:text-white" />
-        </Link>
+          <Link
+            to="/documents/new"
+            className="p-2 hover:bg-blue-100 dark:hover:bg-blue-600 rounded-full flex items-center justify-center transition"
+            title="Upload new document"
+          >
+            <FaPlus className="text-xl text-black dark:text-white" />
+          </Link>
+
+          <Link
+            to="/categories"
+            className="p-2 hover:bg-blue-100 dark:hover:bg-blue-600 rounded-full flex items-center justify-center transition"
+            title="Manage Categories"
+          >
+            <FaTags className="text-xl text-black dark:text-white" />
+          </Link>
+        </div>
 
         <SearchBar
           value={query}
@@ -105,6 +128,11 @@ export default function App() {
           onSubmit={() => applySearch(query)}
         />
       </div>
+
+      {/* Search Help Text */}
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        💡 Tip: Use <code className="px-1 bg-gray-200 dark:bg-gray-700 rounded">tags:work,private</code> to filter by categories
+      </p>
 
       {loading && <p className="text-gray-500 mb-4">Loading documents...</p>}
 

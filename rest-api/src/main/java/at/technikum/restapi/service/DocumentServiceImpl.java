@@ -1,6 +1,7 @@
 package at.technikum.restapi.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,6 +32,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentRepository repository;
     private final DocumentMapper mapper;
     private final CategoryMapper categoryMapper;
+    private final CategoryService categoryService;
     private final DocumentPublisher publisher;
     private final MinioService minioService;
     private final DocumentSearchService documentSearchService;
@@ -57,7 +59,7 @@ public class DocumentServiceImpl implements DocumentService {
 
     @Override
     public DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt,
-            List<CategoryDto> categories) {
+            List<String> categoryIds) {
         if (file == null || file.isEmpty()) {
             throw new InvalidDocumentException("No file provided");
         }
@@ -87,6 +89,13 @@ public class DocumentServiceImpl implements DocumentService {
         try {
             final String objectKey = minioService.uploadFile(file);
 
+            // Fetch categories from IDs and create mutable list
+            final var categories = new ArrayList<>(
+                    categoryIds.stream()
+                            .map(id -> categoryService.getById(UUID.fromString(id)))
+                            .map(categoryMapper::toEntity)
+                            .toList());
+
             final var entity = Document.builder()
                     .title(title)
                     .fileBucket("paperless-documents")
@@ -96,7 +105,7 @@ public class DocumentServiceImpl implements DocumentService {
                     .createdAt(createdAt)
                     .fileSize(file.getSize())
                     .processingStatus(Document.ProcessingStatus.PENDING)
-                    .categories(categories.stream().map(categoryMapper::toEntity).toList())
+                    .categories(categories)
                     .build();
 
             // Save to PostgreSQL
@@ -164,7 +173,9 @@ public class DocumentServiceImpl implements DocumentService {
                 entity.setTitle(updateDoc.title());
             }
             if (updateDoc.categories() != null) {
-                entity.setCategories(
+                // Clear existing categories and add new ones
+                entity.getCategories().clear();
+                entity.getCategories().addAll(
                         updateDoc.categories().stream()
                                 .map(categoryMapper::toEntity)
                                 .toList());
@@ -329,9 +340,12 @@ public class DocumentServiceImpl implements DocumentService {
             // Delegate to search service
             final var searchResults = documentSearchService.search(query, categoryNames);
 
-            // Map SearchDocuments to DTOs
+            // Fetch actual documents from DB to get complete category information
             return searchResults.stream()
-                    .map(mapper::toSummaryDto)
+                    .map(searchDoc -> repository.findById(searchDoc.id())
+                            .map(mapper::toSummaryDto)
+                            .orElse(null))
+                    .filter(dto -> dto != null)
                     .toList();
         } catch (final Exception e) {
             log.error("Failed to search documents for query '{}': {}", query, e.getMessage(), e);

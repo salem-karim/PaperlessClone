@@ -8,8 +8,10 @@ import {
   deleteDocument,
   downloadDocument,
 } from "../lib/documentService";
-import { formatFileSize, tryCatch } from "../lib/utils";
-import type { DocumentDetailDto } from "../lib/types";
+import { getCategories } from "../lib/categoryService";
+import { formatFileSize, tryCatch, getContrastColor } from "../lib/utils";
+import type { DocumentDetailDto, CategoryDto } from "../lib/types";
+import { CategoryIcon } from "../lib/iconMapping";
 import {
   FaHouse,
   FaPencil,
@@ -32,6 +34,9 @@ export default function DocumentDetails() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isEditingCategories, setIsEditingCategories] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState<CategoryDto[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<CategoryDto[]>([]);
 
   // Get the previous search query from location state
   const previousSearch = (location.state as { from?: string })?.from || "/";
@@ -47,9 +52,19 @@ export default function DocumentDetails() {
         setDocument(doc);
         setProcessingStatus(doc.processingStatus);
         setEditedTitle(doc.title);
+        setSelectedCategories(doc.categories || []);
       }
     });
+    
+    // Load available categories
+    loadCategories();
   }, [id]);
+
+  async function loadCategories() {
+    const [cats, err] = await tryCatch(getCategories());
+    if (err) console.error(err);
+    else if (cats) setAvailableCategories(cats);
+  }
 
   // Poll status if document is still processing
   useEffect(() => {
@@ -95,7 +110,7 @@ export default function DocumentDetails() {
     if (!document || !editedTitle.trim()) return;
 
     const [updated, err] = await tryCatch(
-      updateDocument(document.id, { ...document, title: editedTitle.trim() }),
+      updateDocument(document.id, { title: editedTitle.trim() }),
     );
 
     if (err) {
@@ -105,8 +120,47 @@ export default function DocumentDetails() {
     }
 
     if (updated) {
-      setDocument({ ...document, title: updated.title });
+      setDocument({ ...document, title: updated.title, categories: updated.categories });
       setIsEditingTitle(false);
+    }
+  };
+
+  const handleStartEditCategories = () => {
+    setIsEditingCategories(true);
+    setSelectedCategories(document?.categories || []);
+  };
+
+  const handleCancelEditCategories = () => {
+    setIsEditingCategories(false);
+    setSelectedCategories(document?.categories || []);
+  };
+
+  const toggleCategory = (cat: CategoryDto) => {
+    const isSelected = selectedCategories.some((c) => c.id === cat.id);
+    if (isSelected) {
+      setSelectedCategories(selectedCategories.filter((c) => c.id !== cat.id));
+    } else {
+      setSelectedCategories([...selectedCategories, cat]);
+    }
+  };
+
+  const handleSaveCategories = async () => {
+    if (!document) return;
+
+    const [updated, err] = await tryCatch(
+      updateDocument(document.id, { categories: selectedCategories }),
+    );
+
+    if (err) {
+      console.error("Failed to update categories:", err);
+      alert("Failed to update categories");
+      return;
+    }
+
+    if (updated) {
+      setDocument({ ...document, categories: updated.categories });
+      setSelectedCategories(updated.categories);
+      setIsEditingCategories(false);
     }
   };
 
@@ -273,6 +327,92 @@ export default function DocumentDetails() {
           <p className="text-sm text-red-500 mt-2">
             Error: {document.processingError}
           </p>
+        )}
+      </div>
+
+      {/* Categories Section */}
+      <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-3">
+          <span className="font-semibold">Categories:</span>
+          {!isEditingCategories && (
+            <button
+              onClick={handleStartEditCategories}
+              className="text-sm px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+
+        {isEditingCategories ? (
+          <div>
+            {availableCategories.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                No categories available.{" "}
+                <button
+                  onClick={() => navigate("/categories")}
+                  className="text-blue-500 hover:underline"
+                >
+                  Create one
+                </button>
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {availableCategories.map((cat) => {
+                  const isSelected = selectedCategories.some((c) => c.id === cat.id);
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => toggleCategory(cat)}
+                      className={`px-3 py-1 rounded-full text-sm font-medium transition flex items-center gap-1 ${
+                        isSelected
+                          ? "ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800"
+                          : "opacity-70 hover:opacity-100 hover:scale-105"
+                      }`}
+                      style={{
+                        backgroundColor: cat.color,
+                        color: getContrastColor(cat.color),
+                      }}
+                    >
+                      <CategoryIcon iconName={cat.icon} />
+                      {cat.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveCategories}
+                className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition flex items-center gap-2"
+              >
+                <FaCheck /> Save
+              </button>
+              <button
+                onClick={handleCancelEditCategories}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition flex items-center gap-2"
+              >
+                <FaTimes /> Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {document.categories && document.categories.length > 0 ? (
+              document.categories.map((cat) => (
+                <span
+                  key={cat.id}
+                  className="px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1"
+                  style={{ backgroundColor: cat.color, color: getContrastColor(cat.color) }}
+                >
+                  <CategoryIcon iconName={cat.icon} />
+                  {cat.name}
+                </span>
+              ))
+            ) : (
+              <span className="text-gray-500 italic">No categories assigned</span>
+            )}
+          </div>
         )}
       </div>
 

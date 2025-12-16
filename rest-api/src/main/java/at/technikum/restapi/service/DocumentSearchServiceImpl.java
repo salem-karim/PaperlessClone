@@ -125,9 +125,13 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
                                     .operator(Operator.Or)));
                         }
                         if (hasCategories) {
+                            // Convert category names to lowercase for case-insensitive matching
+                            final List<String> lowercaseCategoryNames = categoryNames.stream()
+                                .map(String::toLowerCase)
+                                .toList();
                             b.filter(f -> f.terms(t -> t
                                     .field("categoryNames")
-                                    .terms(v -> v.value(toFieldValues(categoryNames)))));
+                                    .terms(v -> v.value(toFieldValues(lowercaseCategoryNames)))));
                         }
                         return b;
                     }))

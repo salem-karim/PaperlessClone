@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import at.technikum.restapi.persistence.model.Category;
 import at.technikum.restapi.persistence.repository.CategoryRepository;
+import at.technikum.restapi.persistence.repository.DocumentRepository;
 import at.technikum.restapi.service.dto.CategoryDto;
 import at.technikum.restapi.service.exception.CategoryAlreadyExistsException;
 import at.technikum.restapi.service.exception.CategoryNotFoundException;
@@ -24,6 +25,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     private static final Pattern HEX_COLOR_PATTERN = Pattern.compile("^#[0-9A-Fa-f]{6}$");
     private final CategoryRepository repository;
+    private final DocumentRepository documentRepository;
 
     @Override
     @Transactional
@@ -58,8 +60,22 @@ public class CategoryServiceImpl implements CategoryService {
         if (!repository.existsById(id)) {
             throw new CategoryNotFoundException(id);
         }
+
+        repository.findById(id)
+                .orElseThrow(() -> new CategoryNotFoundException(id));
+
+        // Find all documents that have this category and remove it from them
+        final var allDocuments = documentRepository.findAll();
+        for (final var document : allDocuments) {
+            if (document.getCategories().removeIf(cat -> cat.getId().equals(id))) {
+                documentRepository.save(document);
+                log.debug("Removed category {} from document {}", id, document.getId());
+            }
+        }
+
+        // Now safe to delete the category
         repository.deleteById(id);
-        log.info("Deleted category {}", id);
+        log.info("Deleted category {} and removed it from all associated documents", id);
     }
 
     @Override
@@ -85,30 +101,33 @@ public class CategoryServiceImpl implements CategoryService {
         return toDto(saved);
     }
 
-private void validate(final CategoryDto category, final boolean requireId) {
-    if (category == null) {
-        throw new CategoryValidationException("Category payload must not be null");
+    private void validate(final CategoryDto category, final boolean requireId) {
+        if (category == null) {
+            throw new CategoryValidationException("Category payload must not be null");
+        }
+
+        var errors = new ArrayList<String>();
+
+        addError(errors, requireId && category.id() == null, "Category id must be provided");
+        addError(errors, category.name() == null || category.name().isBlank(), "Category name must not be blank");
+        addError(errors, category.name() != null && category.name().length() > 50,
+                "Category name must not exceed 50 characters");
+        addError(errors, category.color() == null || !HEX_COLOR_PATTERN.matcher(category.color()).matches(),
+                "Category color must be a hex value like #A1B2C3");
+        addError(errors, category.icon() == null || category.icon().isBlank(), "Category icon must not be blank");
+        addError(errors, category.icon() != null && category.icon().length() > 50,
+                "Category icon must not exceed 50 characters");
+
+        if (!errors.isEmpty()) {
+            throw new CategoryValidationException(String.join("; ", errors));
+        }
     }
 
-    var errors = new ArrayList<String>();
-
-    addError(errors, requireId && category.id() == null, "Category id must be provided");
-    addError(errors, category.name() == null || category.name().isBlank(), "Category name must not be blank");
-    addError(errors, category.name() != null && category.name().length() > 100, "Category name must not exceed 100 characters");
-    addError(errors, category.color() == null || !HEX_COLOR_PATTERN.matcher(category.color()).matches(), "Category color must be a hex value like #A1B2C3");
-    addError(errors, category.icon() == null || category.icon().isBlank(), "Category icon must not be blank");
-    addError(errors, category.icon() != null && category.icon().length() > 50, "Category icon must not exceed 50 characters");
-
-    if (!errors.isEmpty()) {
-        throw new CategoryValidationException(String.join("; ", errors));
+    private void addError(final List<String> errors, final boolean condition, final String message) {
+        if (condition) {
+            errors.add(message);
+        }
     }
-}
-
-private void addError(final List<String> errors, final boolean condition, final String message) {
-    if (condition) {
-        errors.add(message);
-    }
-}
 
     private Category toEntity(final CategoryDto dto) {
         return Category.builder()

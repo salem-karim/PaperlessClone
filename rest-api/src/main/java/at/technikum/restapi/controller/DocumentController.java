@@ -47,10 +47,10 @@ public class DocumentController {
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<DocumentSummaryDto> uploadDocument(@RequestParam final MultipartFile file,
             @RequestParam final String title, @RequestParam final Long createdAt,
-            @RequestParam(required = false) final List<CategoryDto> categories) {
-        log.info("Received upload request: Title={}", title);
-        final List<CategoryDto> safeCategories = categories != null ? categories : Collections.emptyList();
-        final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAt), safeCategories);
+            @RequestParam(required = false) final List<String> categoryIds) {
+        log.info("Received upload request: Title={}, Categories={}", title, categoryIds);
+        final List<String> safeCategoryIds = categoryIds != null ? categoryIds : Collections.emptyList();
+        final var savedDto = service.upload(file, title, Instant.ofEpochMilli(createdAt), safeCategoryIds);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
     }
 

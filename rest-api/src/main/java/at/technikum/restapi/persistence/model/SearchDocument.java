@@ -23,5 +23,5 @@ public record SearchDocument(
         @Field(type = FieldType.Keyword) String contentType,
         @Field(type = FieldType.Keyword) String processingStatus,
         @Field(type = FieldType.Date) Instant createdAt,
-        @Field(type = FieldType.Keyword) List<String> categoryNames) {
+        @Field(type = FieldType.Keyword, normalizer = "lowercase") List<String> categoryNames) {
 }

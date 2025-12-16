@@ -21,7 +21,7 @@ public class CategoryController {
     private final CategoryService service;
 
     @PostMapping
-    public ResponseEntity<CategoryDto> upload(final CategoryDto category) {
+    public ResponseEntity<CategoryDto> upload(@RequestBody final CategoryDto category) {
         log.info("Received upload request: Name={}", category.name());
         final var savedDto = service.upload(category);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedDto);
@@ -42,14 +42,14 @@ public class CategoryController {
     }
 
     @PutMapping
-    public ResponseEntity<CategoryDto> update(@RequestParam final CategoryDto category) {
+    public ResponseEntity<CategoryDto> update(@RequestBody final CategoryDto category) {
         log.info("Received update request: Name={}, ID={}", category.name(), category.id());
         final var updatedCategory = service.update(category);
         return ResponseEntity.ok(updatedCategory);
     }
 
-    @DeleteMapping
-    public ResponseEntity<Void> delete(@RequestParam final UUID id) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable final UUID id) {
         log.info("Received delete request: ID={}", id);
         service.delete(id);
         return ResponseEntity.noContent().build();
