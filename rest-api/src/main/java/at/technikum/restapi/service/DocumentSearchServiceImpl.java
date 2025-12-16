@@ -39,7 +39,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
                     document.getId(), document.getTitle(),
                     document.getCategories() != null ? document.getCategories().size() : 0);
 
-            final SearchDocument saved = searchDocumentRepository.save(searchDocument);
+            searchDocumentRepository.save(searchDocument);
             log.info("✓ Indexed document metadata {} in ElasticSearch (status: {})",
                     document.getId(), document.getProcessingStatus());
         } catch (final Exception e) {
@@ -60,7 +60,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
                     document.getOcrText() != null ? document.getOcrText().length() : 0,
                     document.getCategories() != null ? document.getCategories().size() : 0);
 
-            final SearchDocument saved = searchDocumentRepository.save(searchDocument);
+            searchDocumentRepository.save(searchDocument);
             log.info("✓ Updated document {} in ElasticSearch after OCR (status: {}, text: {} chars)",
                     document.getId(),
                     document.getProcessingStatus(),
@@ -82,7 +82,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
                     document.getSummaryText() != null ? document.getSummaryText().length() : 0,
                     document.getCategories() != null ? document.getCategories().size() : 0);
 
-            final SearchDocument saved = searchDocumentRepository.save(searchDocument);
+            searchDocumentRepository.save(searchDocument);
             log.info("✓ Updated document {} in ElasticSearch after GenAI (status: {}, summary: {} chars)",
                     document.getId(),
                     document.getProcessingStatus(),
@@ -102,7 +102,7 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
             log.debug("Saving status to Elasticsearch: document ID={}, status={}",
                     document.getId(), document.getProcessingStatus());
 
-            final SearchDocument saved = searchDocumentRepository.save(searchDocument);
+            searchDocumentRepository.save(searchDocument);
             log.info("✓ Updated document {} status in ElasticSearch: {}",
                     document.getId(), document.getProcessingStatus());
         } catch (final Exception e) {
@@ -148,8 +148,8 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
                         if (hasCategories) {
                             // Convert category names to lowercase for case-insensitive matching
                             final List<String> lowercaseCategoryNames = categoryNames.stream()
-                                .map(String::toLowerCase)
-                                .toList();
+                                    .map(String::toLowerCase)
+                                    .toList();
                             b.filter(f -> f.terms(t -> t
                                     .field("categoryNames")
                                     .terms(v -> v.value(toFieldValues(lowercaseCategoryNames)))));

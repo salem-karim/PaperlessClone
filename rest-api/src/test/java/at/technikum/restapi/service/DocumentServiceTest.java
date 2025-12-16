@@ -179,7 +179,7 @@ class DocumentServiceTest {
         final String ocrText = "OCR text content";
         final String ocrTextKey = "ocr-text-key";
 
-        when(repository.findById(documentId)).thenReturn(Optional.of(testDocument));
+        when(repository.findWithCategoriesById(documentId)).thenReturn(Optional.of(testDocument));
         when(repository.save(any(Document.class))).thenReturn(testDocument);
 
         // When
@@ -198,7 +198,7 @@ class DocumentServiceTest {
         final UUID documentId = testDocument.getId();
         final String error = "OCR processing failed";
 
-        when(repository.findById(documentId)).thenReturn(Optional.of(testDocument));
+        when(repository.findWithCategoriesById(documentId)).thenReturn(Optional.of(testDocument));
         when(repository.save(any(Document.class))).thenReturn(testDocument);
 
         // When
@@ -217,7 +217,7 @@ class DocumentServiceTest {
         final String summaryText = "This is a summary";
 
         testDocument.setProcessingStatus(Document.ProcessingStatus.GENAI_PROCESSING);
-        when(repository.findById(documentId)).thenReturn(Optional.of(testDocument));
+        when(repository.findWithCategoriesById(documentId)).thenReturn(Optional.of(testDocument));
         when(repository.save(any(Document.class))).thenReturn(testDocument);
 
         // When
