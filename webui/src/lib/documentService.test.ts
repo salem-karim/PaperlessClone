@@ -1,92 +1,99 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { getDocuments, createDocument, deleteDocument } from './documentService'
-import type { DocumentSummaryDto } from './types'
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import {
+  getDocuments,
+  createDocument,
+  deleteDocument,
+} from "./documentService";
+import type { DocumentSummaryDto } from "./types";
 
-describe('documentService', () => {
+describe("documentService", () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
-  describe('getDocuments', () => {
-    it('fetches documents successfully', async () => {
+  describe("getDocuments", () => {
+    it("fetches documents successfully", async () => {
       const mockDocs: DocumentSummaryDto[] = [
         {
-          id: '1',
-          title: 'Test Doc',
+          id: "1",
+          title: "Test Doc",
           fileSize: 1024,
-          originalFilename: 'test.pdf',
-          contentType: 'application/pdf',
-          processingStatus: 'COMPLETED',
-          createdAt: '2024-01-15T10:00:00Z',
+          originalFilename: "test.pdf",
+          contentType: "application/pdf",
+          processingStatus: "COMPLETED",
+          createdAt: "2024-01-15T10:00:00Z",
+          categories: [],
         },
-      ]
+      ];
 
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockDocs,
-      }) as typeof fetch
+      }) as typeof fetch;
 
-      const result = await getDocuments()
-      expect(result).toEqual(mockDocs)
-      expect(fetch).toHaveBeenCalledWith('/api/v1/documents')
-    })
+      const result = await getDocuments();
+      expect(result).toEqual(mockDocs);
+      expect(fetch).toHaveBeenCalledWith("/api/v1/documents");
+    });
 
-    it('throws error on failed request', async () => {
+    it("throws error on failed request", async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 500,
-      }) as typeof fetch
+      }) as typeof fetch;
 
-      await expect(getDocuments()).rejects.toThrow('HTTP 500')
-    })
-  })
+      await expect(getDocuments()).rejects.toThrow("HTTP 500");
+    });
+  });
 
-  describe('deleteDocument', () => {
-    it('deletes document successfully', async () => {
+  describe("deleteDocument", () => {
+    it("deletes document successfully", async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
-      }) as typeof fetch
+      }) as typeof fetch;
 
-      await deleteDocument('123')
-      expect(fetch).toHaveBeenCalledWith('/api/v1/documents/123', {
-        method: 'DELETE',
-      })
-    })
-  })
+      await deleteDocument("123");
+      expect(fetch).toHaveBeenCalledWith("/api/v1/documents/123", {
+        method: "DELETE",
+      });
+    });
+  });
 
-  describe('createDocument', () => {
-    it('creates document with FormData', async () => {
-      const mockFile = new File(['content'], 'test.pdf', {
-        type: 'application/pdf',
-      })
+  describe("createDocument", () => {
+    it("creates document with FormData", async () => {
+      const mockFile = new File(["content"], "test.pdf", {
+        type: "application/pdf",
+      });
       const mockDoc: DocumentSummaryDto = {
-        id: '1',
-        title: 'New Doc',
+        id: "1",
+        title: "New Doc",
         fileSize: 1024,
-        originalFilename: 'test.pdf',
-        contentType: 'application/pdf',
-        processingStatus: 'PENDING',
+        originalFilename: "test.pdf",
+        contentType: "application/pdf",
+        processingStatus: "PENDING",
         createdAt: new Date().toISOString(),
-      }
+        categories: [],
+      };
 
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => mockDoc,
-      }) as typeof fetch
+      }) as typeof fetch;
 
       const result = await createDocument({
-        title: 'New Doc',
+        title: "New Doc",
         file: mockFile,
-      })
+      });
 
-      expect(result).toEqual(mockDoc)
+      expect(result).toEqual(mockDoc);
       expect(fetch).toHaveBeenCalledWith(
-        '/api/v1/documents',
+        "/api/v1/documents",
         expect.objectContaining({
-          method: 'POST',
+          method: "POST",
           body: expect.any(FormData),
-        })
-      )
-    })
-  })
-})
+        }),
+      );
+    });
+  });
+});
+

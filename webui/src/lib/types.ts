@@ -1,6 +1,16 @@
 export type DocumentDto = {
   title: string;
   file: File;
+  categories?: CategoryDto[];
+};
+
+export type CategoryDto = {
+  id?: string;
+  name: string;
+  color: string;
+  icon: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 // Used in dashboard lists
@@ -12,6 +22,7 @@ export type DocumentSummaryDto = {
   contentType: string;
   processingStatus: ProcessingStatus;
   createdAt: string;
+  categories: CategoryDto[];
 };
 
 // Used on the detail page
@@ -31,7 +42,7 @@ type ErrorResult<E = Error> = readonly [null, E];
 
 export type Result<T, E = Error> = SuccessResult<T> | ErrorResult<E>;
 
-export type ProcessingStatus = 
+export type ProcessingStatus =
   | "PENDING"
   | "OCR_PROCESSING"
   | "OCR_COMPLETED"

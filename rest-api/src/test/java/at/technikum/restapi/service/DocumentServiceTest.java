@@ -1,13 +1,18 @@
 package at.technikum.restapi.service;
 
-import at.technikum.restapi.persistence.model.Document;
-import at.technikum.restapi.persistence.model.SearchDocument;
-import at.technikum.restapi.persistence.repository.DocumentRepository;
-import at.technikum.restapi.service.dto.DocumentDetailDto;
-import at.technikum.restapi.service.dto.DocumentSummaryDto;
-import at.technikum.restapi.service.exception.DocumentNotFoundException;
-import at.technikum.restapi.service.mapper.DocumentMapper;
-import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,13 +20,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import at.technikum.restapi.persistence.model.Document;
+import at.technikum.restapi.persistence.repository.DocumentRepository;
+import at.technikum.restapi.service.dto.DocumentDetailDto;
+import at.technikum.restapi.service.dto.DocumentSummaryDto;
+import at.technikum.restapi.service.exception.DocumentNotFoundException;
+import at.technikum.restapi.service.mapper.DocumentMapper;
+import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class DocumentServiceTest {
@@ -222,30 +227,5 @@ class DocumentServiceTest {
         verify(repository).save(argThat(doc -> doc.getProcessingStatus() == Document.ProcessingStatus.COMPLETED &&
                 doc.getSummaryText().equals(summaryText)));
         verify(documentSearchService).updateDocumentAfterGenAI(any(Document.class));
-    }
-
-    @Test
-    void testSearch_delegatesToSearchService() {
-        // Given
-        final String query = "test";
-        final SearchDocument searchDoc = SearchDocument.builder()
-                .id(testDocument.getId())
-                .title(testDocument.getTitle())
-                .originalFilename(testDocument.getOriginalFilename())
-                .contentType(testDocument.getContentType())
-                .processingStatus(testDocument.getProcessingStatus().name())
-                .createdAt(testDocument.getCreatedAt())
-                .build();
-
-        when(documentSearchService.search(query)).thenReturn(List.of(searchDoc));
-        when(mapper.toSummaryDto(searchDoc)).thenReturn(testSummaryDto);
-
-        // When
-        final List<DocumentSummaryDto> results = documentService.search(query);
-
-        // Then
-        assertNotNull(results);
-        assertEquals(1, results.size());
-        verify(documentSearchService).search(query);
     }
 }

@@ -1,6 +1,7 @@
 package at.technikum.restapi.service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -12,10 +13,11 @@ import at.technikum.restapi.persistence.model.Document;
 import at.technikum.restapi.persistence.repository.DocumentRepository;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
-import at.technikum.restapi.service.dto.OcrStatusDto;
+import at.technikum.restapi.service.dto.WorkerStatusDto;
 import at.technikum.restapi.service.exception.DocumentNotFoundException;
 import at.technikum.restapi.service.exception.DocumentProcessingException;
 import at.technikum.restapi.service.exception.InvalidDocumentException;
+import at.technikum.restapi.service.mapper.CategoryMapper;
 import at.technikum.restapi.service.mapper.DocumentMapper;
 import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository repository;
     private final DocumentMapper mapper;
+    private final CategoryMapper categoryMapper;
+    private final CategoryService categoryService;
     private final DocumentPublisher publisher;
     private final MinioService minioService;
     private final DocumentSearchService documentSearchService;
@@ -53,7 +57,8 @@ public class DocumentServiceImpl implements DocumentService {
             ".gif");
 
     @Override
-    public DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt) {
+    public DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt,
+            List<String> categoryIds) {
         if (file == null || file.isEmpty()) {
             throw new InvalidDocumentException("No file provided");
         }
@@ -83,6 +88,13 @@ public class DocumentServiceImpl implements DocumentService {
         try {
             final String objectKey = minioService.uploadFile(file);
 
+            // Fetch categories from IDs and create mutable list
+            final var categories = new ArrayList<>(
+                    categoryIds.stream()
+                            .map(id -> categoryService.getById(UUID.fromString(id)))
+                            .map(categoryMapper::toEntity)
+                            .toList());
+
             final var entity = Document.builder()
                     .title(title)
                     .fileBucket("paperless-documents")
@@ -92,6 +104,7 @@ public class DocumentServiceImpl implements DocumentService {
                     .createdAt(createdAt)
                     .fileSize(file.getSize())
                     .processingStatus(Document.ProcessingStatus.PENDING)
+                    .categories(categories)
                     .build();
 
             // Save to PostgreSQL
@@ -134,14 +147,14 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public OcrStatusDto getOcrStatus(final UUID id) {
+    public WorkerStatusDto getWorkerStatus(final UUID id) {
         try {
             final var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            return mapper.toOcrStatusDto(entity);
+            return mapper.toWorkerStatusDto(entity);
         } catch (final DataAccessException e) {
-            throw new DocumentProcessingException("Error fetching OCR status for ID=" + id, e);
+            throw new DocumentProcessingException("Error fetching Worker status for ID=" + id, e);
         }
     }
 
@@ -155,8 +168,17 @@ public class DocumentServiceImpl implements DocumentService {
             var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            if (updateDoc.title() != null) {
+            if (updateDoc.title() != null && !updateDoc.title().trim().isBlank()
+                    && !updateDoc.title().equals(entity.getTitle())) {
                 entity.setTitle(updateDoc.title());
+            }
+            if (updateDoc.categories() != null) {
+                // Clear existing categories and add new ones
+                entity.getCategories().clear();
+                entity.getCategories().addAll(
+                        updateDoc.categories().stream()
+                                .map(categoryMapper::toEntity)
+                                .toList());
             }
 
             entity = repository.save(entity);
@@ -260,7 +282,7 @@ public class DocumentServiceImpl implements DocumentService {
         } catch (final DocumentNotFoundException e) {
             throw e;
         } catch (final Exception e) {
-            log.error("Failed to mark document {} as failed: {}", documentId, e.getMessage());
+            log.error("Failed to mark document {} OCR as failed: {}", documentId, e.getMessage());
             throw new DocumentProcessingException("Error marking document as failed: " + documentId, e);
         }
     }
@@ -313,15 +335,17 @@ public class DocumentServiceImpl implements DocumentService {
         }
     }
 
-    @Override
-    public List<DocumentSummaryDto> search(final String query) {
+    public List<DocumentSummaryDto> search(final String query, final List<String> categoryNames) {
         try {
             // Delegate to search service
-            final var searchResults = documentSearchService.search(query);
+            final var searchResults = documentSearchService.search(query, categoryNames);
 
-            // Map SearchDocuments to DTOs
+            // Fetch actual documents from DB to get complete category information
             return searchResults.stream()
-                    .map(mapper::toSummaryDto)
+                    .map(searchDoc -> repository.findById(searchDoc.id())
+                            .map(mapper::toSummaryDto)
+                            .orElse(null))
+                    .filter(dto -> dto != null)
                     .toList();
         } catch (final Exception e) {
             log.error("Failed to search documents for query '{}': {}", query, e.getMessage(), e);

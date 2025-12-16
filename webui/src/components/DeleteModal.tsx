@@ -1,13 +1,14 @@
 type Props = {
   onConfirm: () => void;
   onCancel: () => void;
+  message?: string;
 };
 
-export function DeleteModal({ onConfirm, onCancel }: Props) {
+export function DeleteModal({ onConfirm, onCancel, message }: Props) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg max-w-sm w-full text-center">
-        <p className="mb-4">Are you sure you want to delete this document?</p>
+        <p className="mb-4">{message || "Are you sure you want to delete this document?"}</p>
         <div className="flex justify-center gap-4">
           <button
             onClick={onConfirm}

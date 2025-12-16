@@ -1,7 +1,10 @@
 package at.technikum.restapi.service;
 
-import io.minio.BucketExistsArgs;
-import io.minio.MinioClient;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.io.InputStream;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,13 +21,12 @@ import org.testcontainers.containers.MinIOContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.InputStream;
-
-import static org.assertj.core.api.Assertions.*;
+import io.minio.BucketExistsArgs;
+import io.minio.MinioClient;
 
 @SpringBootTest(properties = {
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration",
-    "spring.rabbitmq.listener.simple.auto-startup=false"
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration",
+        "spring.rabbitmq.listener.simple.auto-startup=false"
 })
 @Testcontainers
 @ActiveProfiles("test")
@@ -39,7 +41,7 @@ class MinioServiceIntegrationTest {
     static class TestMinioConfiguration {
         @Bean
         @Primary
-        public MinioClient minioClient() {
+        MinioClient minioClient() {
             return MinioClient.builder()
                     .endpoint(minioContainer.getS3URL())
                     .credentials(minioContainer.getUserName(), minioContainer.getPassword())
@@ -63,18 +65,16 @@ class MinioServiceIntegrationTest {
 
     @MockitoBean
     private DocumentSearchService documentSearchService;
-    
+
     @BeforeEach
     void setup() throws Exception {
         // Ensure bucket exists
         String bucketName = "test-documents";
         boolean exists = minioClient.bucketExists(
-                BucketExistsArgs.builder().bucket(bucketName).build()
-        );
+                BucketExistsArgs.builder().bucket(bucketName).build());
         if (!exists) {
             minioClient.makeBucket(
-                    io.minio.MakeBucketArgs.builder().bucket(bucketName).build()
-            );
+                    io.minio.MakeBucketArgs.builder().bucket(bucketName).build());
         }
     }
 
@@ -85,8 +85,7 @@ class MinioServiceIntegrationTest {
                 "file",
                 "test-document.pdf",
                 "application/pdf",
-                "Test PDF content for MinIO upload".getBytes()
-        );
+                "Test PDF content for MinIO upload".getBytes());
 
         // When
         String objectKey = minioService.uploadFile(file);
@@ -107,15 +106,13 @@ class MinioServiceIntegrationTest {
     void testUploadFile_differentFileTypes() {
         // Test PNG
         MockMultipartFile pngFile = new MockMultipartFile(
-                "file", "image.png", "image/png", "PNG data".getBytes()
-        );
+                "file", "image.png", "image/png", "PNG data".getBytes());
         String pngKey = minioService.uploadFile(pngFile);
         assertThat(pngKey).endsWith(".png");
 
         // Test JPEG
         MockMultipartFile jpegFile = new MockMultipartFile(
-                "file", "photo.jpg", "image/jpeg", "JPEG data".getBytes()
-        );
+                "file", "photo.jpg", "image/jpeg", "JPEG data".getBytes());
         String jpegKey = minioService.uploadFile(jpegFile);
         assertThat(jpegKey).endsWith(".jpg");
     }
@@ -127,8 +124,7 @@ class MinioServiceIntegrationTest {
                 "file",
                 "download-test.pdf",
                 "application/pdf",
-                "Content to download".getBytes()
-        );
+                "Content to download".getBytes());
         String objectKey = minioService.uploadFile(file);
 
         // When
@@ -154,8 +150,7 @@ class MinioServiceIntegrationTest {
                 "file",
                 "to-delete.pdf",
                 "application/pdf",
-                "Will be deleted".getBytes()
-        );
+                "Will be deleted".getBytes());
         String objectKey = minioService.uploadFile(file);
 
         // Verify it exists
@@ -178,8 +173,7 @@ class MinioServiceIntegrationTest {
                 "file",
                 "presigned-test.pdf",
                 "application/pdf",
-                "Presigned URL test content".getBytes()
-        );
+                "Presigned URL test content".getBytes());
         String objectKey = minioService.uploadFile(file);
 
         // When
@@ -204,8 +198,7 @@ class MinioServiceIntegrationTest {
                 "file",
                 "large-file.pdf",
                 "application/pdf",
-                largeContent
-        );
+                largeContent);
 
         // When
         String objectKey = minioService.uploadFile(largeFile);
@@ -227,15 +220,14 @@ class MinioServiceIntegrationTest {
                 "file",
                 "test file with spaces & special!chars.pdf",
                 "application/pdf",
-                "Test content".getBytes()
-        );
+                "Test content".getBytes());
 
         // When
         String objectKey = minioService.uploadFile(file);
 
         // Then
         assertThat(objectKey).isNotNull();
-        
+
         // Verify can download
         InputStream stream = minioService.downloadFile(objectKey);
         assertThat(stream).isNotNull();

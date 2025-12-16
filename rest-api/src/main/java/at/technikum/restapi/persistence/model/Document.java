@@ -1,11 +1,26 @@
 package at.technikum.restapi.persistence.model;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Basic;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -84,4 +99,9 @@ public class Document {
 
     @Column
     private Instant genaiProcessedAt;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(name = "document_categories", joinColumns = @JoinColumn(name = "document_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
+    @Builder.Default
+    private List<Category> categories = new ArrayList<>();
 }

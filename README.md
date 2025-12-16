@@ -14,44 +14,18 @@ This will start the following services:
 * **webui** – the frontend web interface
 * **rest-api** – the backend REST API
 * **ocr-worker** – the OCR processing worker
+* **genAI-worker** – the AI Summarization worker
+* **batch** – the Batch Processor for Access Logs
 
 ---
 
-## Running only the REST API
-
-```bash
-docker compose up -d rest-api
-````
-
-* The other services and postgres will also be started by this
-* Access the API at `http://localhost:8080`.
-
----
-
-## Running only the WebUI
-
-1. Build the WebUI Docker image:
-
-```bash
-docker compose up -d nginx
-````
-
-* Access the frontend at `http://localhost:8000`.
-
----
-
-## Running only the OCR Worker
-
-1. Build the OCR Worker Docker image:
-
-```bash
-docker compose up -d ocr-worker
-````
-
-* The worker will process OCR tasks in the background. Make sure it can connect to the REST API and any required queues/databases.
-
-
-
+The WebUI is using React + Vite for the frontend and using NginX as a WebServer and Reverse Proxy
+The API is built using Spring-Boot and connects to the Workers via a RabbitMQ Queueing Service
+The Document Files are stored in a MinIO Bucket Storage and the Metadata in a PostgreSQL Database as well as indexed in a ElasticSearch Storage container
+The Workers are written in python and use a shared module for abstract custom RabbitMQ and MinIO Clients
+Only the API accesses the PostgreSQL Database and can be considered as the central point
+For the API as well as the Batch Processor Unit & Integration Tests have been written and tested using a GitHub Actions CI/CD Pipeline
+Also linting is ran in the Pipeline for all 3 different spaces (WebUI using eslint, API and Batch Processor using checkstyles and the workers using mypy and ruff)
 
 Felix's Cheatsheet:
 

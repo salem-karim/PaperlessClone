@@ -1,9 +1,24 @@
 package at.technikum.restapi.service;
 
-import at.technikum.restapi.persistence.model.Document;
-import at.technikum.restapi.persistence.model.SearchDocument;
-import at.technikum.restapi.persistence.repository.SearchDocumentRepository;
-import at.technikum.restapi.service.mapper.DocumentMapper;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,13 +30,10 @@ import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
 import org.springframework.data.elasticsearch.core.query.Query;
 
-import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import at.technikum.restapi.persistence.model.Document;
+import at.technikum.restapi.persistence.model.SearchDocument;
+import at.technikum.restapi.persistence.repository.SearchDocumentRepository;
+import at.technikum.restapi.service.mapper.DocumentMapper;
 
 @SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +53,7 @@ class DocumentSearchServiceTest {
 
     private Document testDocument;
     private SearchDocument testSearchDocument;
-    
+
     @BeforeEach
     void setUp() {
         testDocument = Document.builder()
@@ -191,7 +203,7 @@ class DocumentSearchServiceTest {
     @Test
     void testSearch_withEmptyQuery_returnsEmptyList() {
         // When
-        List<SearchDocument> results = searchService.search("");
+        List<SearchDocument> results = searchService.search("", new ArrayList<>());
 
         // Then
         assertTrue(results.isEmpty());
@@ -201,7 +213,7 @@ class DocumentSearchServiceTest {
     @Test
     void testSearch_withNullQuery_returnsEmptyList() {
         // When
-        List<SearchDocument> results = searchService.search(null);
+        List<SearchDocument> results = searchService.search(null, new ArrayList<>());
 
         // Then
         assertTrue(results.isEmpty());
@@ -222,7 +234,7 @@ class DocumentSearchServiceTest {
                 .thenReturn(searchHits);
 
         // When
-        List<SearchDocument> results = searchService.search(query);
+        List<SearchDocument> results = searchService.search(query, new ArrayList<>());
 
         // Then
         assertNotNull(results);
@@ -243,7 +255,7 @@ class DocumentSearchServiceTest {
                 .thenReturn(searchHits);
 
         // When
-        List<SearchDocument> results = searchService.search(query);
+        List<SearchDocument> results = searchService.search(query, new ArrayList<>());
 
         // Then
         assertNotNull(results);
@@ -259,13 +271,13 @@ class DocumentSearchServiceTest {
                 .thenThrow(new RuntimeException("Search failed"));
 
         // When & Then
-        assertThrows(RuntimeException.class, () -> searchService.search(query));
+        assertThrows(RuntimeException.class, () -> searchService.search(query, new ArrayList<>()));
     }
 
     @Test
     void testSearch_withWhitespaceQuery_returnsEmptyList() {
         // When
-        List<SearchDocument> results = searchService.search("   ");
+        List<SearchDocument> results = searchService.search("   ", new ArrayList<>());
 
         // Then
         assertTrue(results.isEmpty());

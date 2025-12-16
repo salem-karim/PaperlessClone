@@ -26,6 +26,15 @@ export async function createDocument(
   form.append("file", doc.file);
   form.append("title", doc.title);
   form.append("createdAt", String(doc.file.lastModified));
+  
+  // Add category IDs if provided
+  if (doc.categories && doc.categories.length > 0) {
+    doc.categories.forEach(cat => {
+      if (cat.id) {
+        form.append("categoryIds", cat.id);
+      }
+    });
+  }
 
   const res = await fetch("/api/v1/documents", {
     method: "POST",
@@ -36,15 +45,30 @@ export async function createDocument(
   return res.json() as Promise<DocumentSummaryDto>;
 }
 
-// PUT (update) document Title by ID
+// PUT (update) document Title and Categories by ID
 export async function updateDocument(
   id: string,
-  updates: Pick<DocumentSummaryDto, "title">,
+  updates: Partial<Pick<DocumentSummaryDto, "title" | "categories">>,
 ): Promise<DocumentSummaryDto> {
+  // First fetch the current document to get all fields
+  const currentDoc = await getDocumentById(id);
+  
+  // Build the full DocumentSummaryDto with updates
+  const fullUpdate: DocumentSummaryDto = {
+    id: currentDoc.id,
+    title: updates.title !== undefined ? updates.title : currentDoc.title,
+    originalFilename: currentDoc.originalFilename,
+    fileSize: currentDoc.fileSize,
+    contentType: currentDoc.contentType,
+    processingStatus: currentDoc.processingStatus,
+    createdAt: currentDoc.createdAt,
+    categories: updates.categories !== undefined ? updates.categories : currentDoc.categories,
+  };
+  
   const res = await fetch(`/api/v1/documents/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updates),
+    body: JSON.stringify(fullUpdate),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<DocumentSummaryDto>;
@@ -106,10 +130,17 @@ export async function downloadDocument(
   }
 }
 
-export async function searchDocuments(query: string) {
-  const res = await fetch(
-    `api/v1/documents/search?q=${encodeURIComponent(query)}`,
-  );
-  if (!res.ok) throw new Error("Search failed");
+export async function searchDocuments(query: string, categories?: string[]): Promise<DocumentSummaryDto[]> {
+  // Ensure query has at least empty string
+  const searchQuery = query || "";
+  let url = `/api/v1/documents/search?q=${encodeURIComponent(searchQuery)}`;
+  
+  if (categories && categories.length > 0) {
+    const categoryParams = categories.map(c => `categories=${encodeURIComponent(c)}`).join('&');
+    url += `&${categoryParams}`;
+  }
+  
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Search failed: HTTP ${res.status}`);
   return res.json() as Promise<DocumentSummaryDto[]>;
 }

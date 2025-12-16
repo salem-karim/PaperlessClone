@@ -1,12 +1,25 @@
 package at.technikum.restapi.controller;
 
-import at.technikum.restapi.persistence.model.Document;
-import at.technikum.restapi.persistence.repository.DocumentRepository;
-import at.technikum.restapi.service.DocumentSearchService;
-import at.technikum.restapi.service.MinioService;
-import at.technikum.restapi.service.dto.DocumentSummaryDto;
-import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.io.ByteArrayInputStream;
+import java.time.Instant;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,13 +32,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayInputStream;
-import java.time.Instant;
-import java.util.UUID;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import at.technikum.restapi.persistence.model.Document;
+import at.technikum.restapi.persistence.repository.DocumentRepository;
+import at.technikum.restapi.service.DocumentSearchService;
+import at.technikum.restapi.service.MinioService;
+import at.technikum.restapi.service.dto.DocumentSummaryDto;
+import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
 
 @SpringBootTest(properties = {
         "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration"

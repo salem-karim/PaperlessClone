@@ -8,17 +8,18 @@ import org.springframework.web.multipart.MultipartFile;
 
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
-import at.technikum.restapi.service.dto.OcrStatusDto;
+import at.technikum.restapi.service.dto.WorkerStatusDto;
 
 public interface DocumentService {
 
-    DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt);
+    DocumentSummaryDto upload(final MultipartFile file, final String title, final Instant createdAt,
+            List<String> categoryIds);
 
     List<DocumentSummaryDto> getAll();
 
     DocumentDetailDto getById(final UUID id);
 
-    OcrStatusDto getOcrStatus(final UUID id);
+    WorkerStatusDto getWorkerStatus(final UUID id);
 
     DocumentSummaryDto update(final UUID id, final DocumentSummaryDto updateDoc);
 
@@ -32,5 +33,5 @@ public interface DocumentService {
 
     void markGenAIAsFailed(final UUID documentId, final String error);
 
-    List<DocumentSummaryDto> search(final String query);
+    List<DocumentSummaryDto> search(final String query, final List<String> categoryNames);
 }

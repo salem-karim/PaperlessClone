@@ -18,5 +18,5 @@ public interface DocumentSearchService {
 
     void deleteFromIndex(final UUID documentId);
 
-    List<SearchDocument> search(final String queryString);
+    List<SearchDocument> search(final String queryString, final List<String> categoryNames);
 }

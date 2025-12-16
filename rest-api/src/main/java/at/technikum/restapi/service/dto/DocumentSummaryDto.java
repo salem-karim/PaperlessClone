@@ -1,6 +1,7 @@
 package at.technikum.restapi.service.dto;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import at.technikum.restapi.persistence.model.Document.ProcessingStatus;
@@ -14,5 +15,6 @@ public record DocumentSummaryDto(
         Long fileSize,
         String contentType,
         ProcessingStatus processingStatus,
-        Instant createdAt) {
+        Instant createdAt,
+        List<CategoryDto> categories) {
 }

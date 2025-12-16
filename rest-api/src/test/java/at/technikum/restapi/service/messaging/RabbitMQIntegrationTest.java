@@ -1,14 +1,14 @@
 package at.technikum.restapi.service.messaging;
 
-import at.technikum.restapi.persistence.model.Document;
-import at.technikum.restapi.persistence.repository.DocumentRepository;
-import at.technikum.restapi.service.DocumentSearchService;
-import at.technikum.restapi.service.messaging.dto.GenAIRequestDto;
-import at.technikum.restapi.service.messaging.dto.GenAIResponseDto;
-import at.technikum.restapi.service.messaging.dto.OcrRequestDto;
-import at.technikum.restapi.service.messaging.dto.OcrResponseDto;
-import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.TimeUnit;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Message;
@@ -24,17 +24,19 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.time.Duration;
-import java.time.Instant;
-import java.util.concurrent.TimeUnit;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
+import at.technikum.restapi.persistence.model.Document;
+import at.technikum.restapi.persistence.repository.DocumentRepository;
+import at.technikum.restapi.service.DocumentSearchService;
+import at.technikum.restapi.service.messaging.dto.GenAIRequestDto;
+import at.technikum.restapi.service.messaging.dto.GenAIResponseDto;
+import at.technikum.restapi.service.messaging.dto.OcrRequestDto;
+import at.technikum.restapi.service.messaging.dto.OcrResponseDto;
+import at.technikum.restapi.service.messaging.publisher.DocumentPublisher;
 
 @SpringBootTest(properties = {
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration"
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchDataAutoConfiguration,org.springframework.boot.autoconfigure.data.elasticsearch.ElasticsearchRepositoriesAutoConfiguration"
 })
 @Testcontainers
 @ActiveProfiles("test")
@@ -73,13 +75,13 @@ class RabbitMQIntegrationTest {
     @BeforeEach
     void setup() {
         documentRepository.deleteAll();
-        
+
         // Mock Elasticsearch interactions
         doNothing().when(documentSearchService).indexDocumentMetadata(any());
         doNothing().when(documentSearchService).updateDocumentStatus(any());
         doNothing().when(documentSearchService).updateDocumentAfterOcr(any());
         doNothing().when(documentSearchService).updateDocumentAfterGenAI(any());
-        
+
         testDocument = documentRepository.save(Document.builder()
                 .title("Test Document")
                 .originalFilename("test.pdf")
@@ -99,14 +101,14 @@ class RabbitMQIntegrationTest {
         // When - REST API publishes OCR request via exchange with routing key
         documentPublisher.publishDocumentForOcr(testDocument);
 
-        // Then - verify message was sent to OCR queue (bound to exchange with routing key)
+        // Then - verify message was sent to OCR queue (bound to exchange with routing
+        // key)
         Message message = rabbitTemplate.receive("documents.ocr.processing", 5000);
         assertThat(message).isNotNull();
 
         OcrRequestDto ocrRequest = objectMapper.readValue(
-                message.getBody(), 
-                OcrRequestDto.class
-        );
+                message.getBody(),
+                OcrRequestDto.class);
 
         // Verify request matches OcrRequest model from workers
         assertThat(ocrRequest.documentId()).isEqualTo(testDocument.getId().toString());
@@ -133,9 +135,8 @@ class RabbitMQIntegrationTest {
         assertThat(message).isNotNull();
 
         GenAIRequestDto genAIRequest = objectMapper.readValue(
-                message.getBody(), 
-                GenAIRequestDto.class
-        );
+                message.getBody(),
+                GenAIRequestDto.class);
 
         // Verify request matches GenAIRequest model from workers
         assertThat(genAIRequest.documentId()).isEqualTo(testDocument.getId().toString());
@@ -151,7 +152,7 @@ class RabbitMQIntegrationTest {
         OcrResponseDto ocrResponse = OcrResponseDto.builder()
                 .documentId(testDocument.getId().toString())
                 .ocrText("Extracted text from OCR worker")
-                .ocrTextObjectKey(null)  // No MinIO key for inline text
+                .ocrTextObjectKey(null) // No MinIO key for inline text
                 .status("completed")
                 .worker("ocr-worker-1")
                 .build();
@@ -194,7 +195,8 @@ class RabbitMQIntegrationTest {
 
     @Test
     void testOcrResultConsumer_completedButNoTextProvided() {
-        // Given - simulate edge case where worker sends completed but no text or reference
+        // Given - simulate edge case where worker sends completed but no text or
+        // reference
         OcrResponseDto ocrResponse = OcrResponseDto.builder()
                 .documentId(testDocument.getId().toString())
                 .ocrText(null)
@@ -327,7 +329,7 @@ class RabbitMQIntegrationTest {
                 .status("completed")
                 .worker("ocr-worker-1")
                 .build();
-        
+
         rabbitTemplate.convertAndSend("documents.ocr.processing.response", ocrResponse);
 
         // Wait for OCR processing to complete and GenAI request to be published
@@ -342,9 +344,8 @@ class RabbitMQIntegrationTest {
         assertThat(genAIRequestMsg).isNotNull();
 
         GenAIRequestDto genAIRequest = objectMapper.readValue(
-                genAIRequestMsg.getBody(), 
-                GenAIRequestDto.class
-        );
+                genAIRequestMsg.getBody(),
+                GenAIRequestDto.class);
         assertThat(genAIRequest.documentId()).isEqualTo(document.getId().toString());
         assertThat(genAIRequest.ocrText()).isEqualTo("Extracted text from complete flow");
 

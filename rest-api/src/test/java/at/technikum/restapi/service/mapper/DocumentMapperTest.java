@@ -1,18 +1,19 @@
 package at.technikum.restapi.service.mapper;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
+
 import at.technikum.restapi.persistence.model.Document;
 import at.technikum.restapi.persistence.model.SearchDocument;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
 import at.technikum.restapi.service.messaging.dto.GenAIRequestDto;
 import at.technikum.restapi.service.messaging.dto.OcrRequestDto;
-import org.junit.jupiter.api.Test;
-import org.mapstruct.factory.Mappers;
-
-import java.time.Instant;
-import java.util.UUID;
-
-import static org.assertj.core.api.Assertions.*;
 
 class DocumentMapperTest {
 
@@ -163,7 +164,7 @@ class DocumentMapperTest {
         // Given
         UUID id = UUID.randomUUID();
         Instant now = Instant.now();
-        
+
         SearchDocument searchDoc = SearchDocument.builder()
                 .id(id)
                 .title("Search Result")
