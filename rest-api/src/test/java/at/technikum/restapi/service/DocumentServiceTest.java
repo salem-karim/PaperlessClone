@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,7 +21,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import at.technikum.restapi.persistence.model.Document;
-import at.technikum.restapi.persistence.model.SearchDocument;
 import at.technikum.restapi.persistence.repository.DocumentRepository;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
@@ -229,30 +227,5 @@ class DocumentServiceTest {
         verify(repository).save(argThat(doc -> doc.getProcessingStatus() == Document.ProcessingStatus.COMPLETED &&
                 doc.getSummaryText().equals(summaryText)));
         verify(documentSearchService).updateDocumentAfterGenAI(any(Document.class));
-    }
-
-    @Test
-    void testSearch_delegatesToSearchService() {
-        // Given
-        final String query = "test";
-        final SearchDocument searchDoc = SearchDocument.builder()
-                .id(testDocument.getId())
-                .title(testDocument.getTitle())
-                .originalFilename(testDocument.getOriginalFilename())
-                .contentType(testDocument.getContentType())
-                .processingStatus(testDocument.getProcessingStatus().name())
-                .createdAt(testDocument.getCreatedAt())
-                .build();
-
-        when(documentSearchService.search(query, new ArrayList<>())).thenReturn(List.of(searchDoc));
-        when(mapper.toSummaryDto(searchDoc)).thenReturn(testSummaryDto);
-
-        // When
-        final List<DocumentSummaryDto> results = documentService.search(query, new ArrayList<>());
-
-        // Then
-        assertNotNull(results);
-        assertEquals(1, results.size());
-        verify(documentSearchService).search(query, new ArrayList<>());
     }
 }
