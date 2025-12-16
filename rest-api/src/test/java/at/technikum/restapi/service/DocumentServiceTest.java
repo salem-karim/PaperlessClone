@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -243,15 +244,15 @@ class DocumentServiceTest {
                 .createdAt(testDocument.getCreatedAt())
                 .build();
 
-        when(documentSearchService.search(query)).thenReturn(List.of(searchDoc));
+        when(documentSearchService.search(query, new ArrayList<>())).thenReturn(List.of(searchDoc));
         when(mapper.toSummaryDto(searchDoc)).thenReturn(testSummaryDto);
 
         // When
-        final List<DocumentSummaryDto> results = documentService.search(query);
+        final List<DocumentSummaryDto> results = documentService.search(query, new ArrayList<>());
 
         // Then
         assertNotNull(results);
         assertEquals(1, results.size());
-        verify(documentSearchService).search(query);
+        verify(documentSearchService).search(query, new ArrayList<>());
     }
 }

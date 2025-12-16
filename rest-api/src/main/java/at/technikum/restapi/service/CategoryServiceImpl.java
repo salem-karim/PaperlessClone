@@ -1,5 +1,6 @@
 package at.technikum.restapi.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -84,29 +85,30 @@ public class CategoryServiceImpl implements CategoryService {
         return toDto(saved);
     }
 
-    private void validate(final CategoryDto category, final boolean requireId) {
-        if (category == null) {
-            throw new CategoryValidationException("Category payload must not be null");
-        }
-        if (requireId && category.id() == null) {
-            throw new CategoryValidationException("Category id must be provided");
-        }
-        if (category.name() == null || category.name().isBlank()) {
-            throw new CategoryValidationException("Category name must not be blank");
-        }
-        if (category.name().length() > 100) {
-            throw new CategoryValidationException("Category name must not exceed 100 characters");
-        }
-        if (category.color() == null || !HEX_COLOR_PATTERN.matcher(category.color()).matches()) {
-            throw new CategoryValidationException("Category color must be a hex value like #A1B2C3");
-        }
-        if (category.icon() == null || category.icon().isBlank()) {
-            throw new CategoryValidationException("Category icon must not be blank");
-        }
-        if (category.icon().length() > 50) {
-            throw new CategoryValidationException("Category icon must not exceed 50 characters");
-        }
+private void validate(final CategoryDto category, final boolean requireId) {
+    if (category == null) {
+        throw new CategoryValidationException("Category payload must not be null");
     }
+
+    var errors = new ArrayList<String>();
+
+    addError(errors, requireId && category.id() == null, "Category id must be provided");
+    addError(errors, category.name() == null || category.name().isBlank(), "Category name must not be blank");
+    addError(errors, category.name() != null && category.name().length() > 100, "Category name must not exceed 100 characters");
+    addError(errors, category.color() == null || !HEX_COLOR_PATTERN.matcher(category.color()).matches(), "Category color must be a hex value like #A1B2C3");
+    addError(errors, category.icon() == null || category.icon().isBlank(), "Category icon must not be blank");
+    addError(errors, category.icon() != null && category.icon().length() > 50, "Category icon must not exceed 50 characters");
+
+    if (!errors.isEmpty()) {
+        throw new CategoryValidationException(String.join("; ", errors));
+    }
+}
+
+private void addError(final List<String> errors, final boolean condition, final String message) {
+    if (condition) {
+        errors.add(message);
+    }
+}
 
     private Category toEntity(final CategoryDto dto) {
         return Category.builder()

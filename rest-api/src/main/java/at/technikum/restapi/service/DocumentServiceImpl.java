@@ -1,7 +1,6 @@
 package at.technikum.restapi.service;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,7 +13,7 @@ import at.technikum.restapi.persistence.repository.DocumentRepository;
 import at.technikum.restapi.service.dto.CategoryDto;
 import at.technikum.restapi.service.dto.DocumentDetailDto;
 import at.technikum.restapi.service.dto.DocumentSummaryDto;
-import at.technikum.restapi.service.dto.OcrStatusDto;
+import at.technikum.restapi.service.dto.WorkerStatusDto;
 import at.technikum.restapi.service.exception.DocumentNotFoundException;
 import at.technikum.restapi.service.exception.DocumentProcessingException;
 import at.technikum.restapi.service.exception.InvalidDocumentException;
@@ -140,14 +139,14 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public OcrStatusDto getOcrStatus(final UUID id) {
+    public WorkerStatusDto getWorkerStatus(final UUID id) {
         try {
             final var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            return mapper.toOcrStatusDto(entity);
+            return mapper.toWorkerStatusDto(entity);
         } catch (final DataAccessException e) {
-            throw new DocumentProcessingException("Error fetching OCR status for ID=" + id, e);
+            throw new DocumentProcessingException("Error fetching Worker status for ID=" + id, e);
         }
     }
 
@@ -161,8 +160,14 @@ public class DocumentServiceImpl implements DocumentService {
             var entity = repository.findById(id)
                     .orElseThrow(() -> new DocumentNotFoundException(id));
 
-            if (updateDoc.title() != null) {
+            if (updateDoc.title() != null && !updateDoc.title().trim().isBlank() && !updateDoc.title().equals(entity.getTitle())) {
                 entity.setTitle(updateDoc.title());
+            }
+            if (updateDoc.categories() != null) {
+                entity.setCategories(
+                        updateDoc.categories().stream()
+                                .map(categoryMapper::toEntity)
+                                .toList());
             }
 
             entity = repository.save(entity);
@@ -266,7 +271,7 @@ public class DocumentServiceImpl implements DocumentService {
         } catch (final DocumentNotFoundException e) {
             throw e;
         } catch (final Exception e) {
-            log.error("Failed to mark document {} as failed: {}", documentId, e.getMessage());
+            log.error("Failed to mark document {} OCR as failed: {}", documentId, e.getMessage());
             throw new DocumentProcessingException("Error marking document as failed: " + documentId, e);
         }
     }
@@ -319,11 +324,10 @@ public class DocumentServiceImpl implements DocumentService {
         }
     }
 
-    @Override
-    public List<DocumentSummaryDto> search(final String query) {
+    public List<DocumentSummaryDto> search(final String query, final List<String> categoryNames) {
         try {
             // Delegate to search service
-            final var searchResults = documentSearchService.search(query);
+            final var searchResults = documentSearchService.search(query, categoryNames);
 
             // Map SearchDocuments to DTOs
             return searchResults.stream()

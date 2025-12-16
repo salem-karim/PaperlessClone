@@ -1,6 +1,6 @@
 package at.technikum.restapi.controller;
 
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import at.technikum.restapi.service.CategoryService;
 import at.technikum.restapi.service.dto.CategoryDto;
@@ -12,12 +12,6 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PutMapping;
 
 @Slf4j
 @RestController
@@ -40,8 +34,8 @@ public class CategoryController {
         return ResponseEntity.ok(categories);
     }
 
-    @GetMapping
-    public ResponseEntity<CategoryDto> getById(@RequestParam final UUID id) {
+    @GetMapping("/{id}")
+    public ResponseEntity<CategoryDto> getById(@PathVariable final UUID id) {
         log.debug("Fetching Category: ID:{}", id);
         final var category = service.getById(id);
         return ResponseEntity.ok(category);

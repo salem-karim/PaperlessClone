@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
@@ -102,41 +103,50 @@ public class DocumentSearchServiceImpl implements DocumentSearchService {
     }
 
     @Override
-    public List<SearchDocument> search(final String queryString) {
-        if (queryString == null || queryString.isBlank()) {
-            log.info("Empty search query provided, return empty results");
+    public List<SearchDocument> search(final String queryString, final List<String> categoryNames) {
+        final boolean hasQuery = queryString != null && !queryString.isBlank();
+        final boolean hasCategories = categoryNames != null && !categoryNames.isEmpty();
+
+        if (!hasQuery && !hasCategories) {
+            log.info("Empty search query and no categories provided, return empty results");
             return Collections.emptyList();
         }
 
         try {
-            log.info("Searching ElasticSearch for query: {}", queryString);
             final Query searchQuery = NativeQuery.builder()
-                    .withQuery(q -> q
-                            .multiMatch(m -> m
+                    .withQuery(q -> q.bool(b -> {
+                        if (hasQuery) {
+                            b.must(m -> m.multiMatch(mm -> mm
                                     .query(queryString)
-                                    .fields(
-                                            "title^3", // Title is most important (3x boost)
-                                            "originalFilename^2", // Filename is important (2x boost)
-                                            "summaryText^1.5", // Summary is fairly important (1.5x boost)
-                                            "ocrText" // OCR text has normal weight
-                                    )
+                                    .fields("title^3", "originalFilename^2", "summaryText^1.5", "ocrText")
                                     .type(TextQueryType.BestFields)
-                                    .fuzziness("AUTO") // Allow typos
-                                    .prefixLength(2) // Require first 2 chars to match exactly
-                                    .operator(Operator.Or)))
+                                    .fuzziness("AUTO")
+                                    .prefixLength(2)
+                                    .operator(Operator.Or)));
+                        }
+                        if (hasCategories) {
+                            b.filter(f -> f.terms(t -> t
+                                    .field("categoryNames")
+                                    .terms(v -> v.value(toFieldValues(categoryNames)))));
+                        }
+                        return b;
+                    }))
                     .build();
 
             final var searchHits = elasticsearchOperations.search(searchQuery, SearchDocument.class);
-            final var results = searchHits.getSearchHits().stream()
+            return searchHits.getSearchHits().stream()
                     .map(SearchHit::getContent)
                     .toList();
-
-            log.info("Found {} documents matching query '{}'", results.size(), queryString);
-
-            return results;
         } catch (final Exception e) {
-            log.error("Failed to search documents for query '{}': {}", queryString, e.getMessage(), e);
+            log.error("Failed to search documents for query '{}' and categories {}: {}",
+                    queryString, categoryNames, e.getMessage(), e);
             throw new RuntimeException("Error searching documents", e);
         }
+    }
+
+    private List<FieldValue> toFieldValues(final List<String> values) {
+        return values.stream()
+                .map(FieldValue::of)
+                .toList();
     }
 }

@@ -17,6 +17,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -30,8 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ElasticSearchIntegrationTest {
 
     @Container
-    static final ElasticsearchContainer elasticsearchContainer =
-        new ElasticsearchContainer(
+    static final ElasticsearchContainer elasticsearchContainer = new ElasticsearchContainer(
             DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch:8.13.4"))
             .withEnv("xpack.security.enabled", "false")
             .withEnv("discovery.type", "single-node");
@@ -66,8 +66,8 @@ class ElasticSearchIntegrationTest {
         documentSearchService.indexDocumentMetadata(contract);
         elasticsearchOperations.indexOps(SearchDocument.class).refresh();
 
-        List<SearchDocument> invoiceResults = documentSearchService.search("Invoice");
-        List<SearchDocument> contractResults = documentSearchService.search("Contract");
+        List<SearchDocument> invoiceResults = documentSearchService.search("Invoice", new ArrayList<>());
+        List<SearchDocument> contractResults = documentSearchService.search("Contract", new ArrayList<>());
 
         assertEquals(1, invoiceResults.size());
         assertEquals(invoice.getId(), invoiceResults.getFirst().id());
@@ -86,7 +86,7 @@ class ElasticSearchIntegrationTest {
         documentSearchService.indexDocumentMetadata(contract);
         elasticsearchOperations.indexOps(SearchDocument.class).refresh();
 
-        List<SearchDocument> invoiceResults = documentSearchService.search("Invoice");
+        List<SearchDocument> invoiceResults = documentSearchService.search("Invoice", new ArrayList<>());
 
         assertEquals(2, invoiceResults.size());
         Set<UUID> ids = invoiceResults.stream().map(SearchDocument::id).collect(Collectors.toSet());
@@ -101,7 +101,7 @@ class ElasticSearchIntegrationTest {
         documentSearchService.indexDocumentMetadata(doc);
         elasticsearchOperations.indexOps(SearchDocument.class).refresh();
 
-        List<SearchDocument> results = documentSearchService.search("NonExistingTermXYZ");
+        List<SearchDocument> results = documentSearchService.search("NonExistingTermXYZ", new ArrayList<>());
         assertEquals(0, results.size());
     }
 
@@ -109,24 +109,24 @@ class ElasticSearchIntegrationTest {
     void searchFindsInOcrTextAndSummary() {
         // Create a document with unique tokens in OCR and summary text
         Document uniqueDoc = Document.builder()
-            .id(UUID.randomUUID())
-            .title("Random Title")
-            .originalFilename("unique.pdf")
-            .contentType("application/pdf")
-            .fileSize(1_024L)
-            .fileBucket("integration-test")
-            .fileObjectKey("unique.pdf")
-            .createdAt(Instant.now())
-            .processingStatus(Document.ProcessingStatus.COMPLETED)
-            .ocrText("this contains uniquetokenocr123")
-            .summaryText("this contains uniquesummarytoken456")
-            .build();
+                .id(UUID.randomUUID())
+                .title("Random Title")
+                .originalFilename("unique.pdf")
+                .contentType("application/pdf")
+                .fileSize(1_024L)
+                .fileBucket("integration-test")
+                .fileObjectKey("unique.pdf")
+                .createdAt(Instant.now())
+                .processingStatus(Document.ProcessingStatus.COMPLETED)
+                .ocrText("this contains uniquetokenocr123")
+                .summaryText("this contains uniquesummarytoken456")
+                .build();
 
         documentSearchService.indexDocumentMetadata(uniqueDoc);
         elasticsearchOperations.indexOps(SearchDocument.class).refresh();
 
-        List<SearchDocument> ocrResults = documentSearchService.search("uniquetokenocr123");
-        List<SearchDocument> summaryResults = documentSearchService.search("uniquesummarytoken456");
+        List<SearchDocument> ocrResults = documentSearchService.search("uniquetokenocr123", new ArrayList<>());
+        List<SearchDocument> summaryResults = documentSearchService.search("uniquesummarytoken456", new ArrayList<>());
 
         assertEquals(1, ocrResults.size());
         assertEquals(uniqueDoc.getId(), ocrResults.getFirst().id());
@@ -145,7 +145,7 @@ class ElasticSearchIntegrationTest {
         documentSearchService.indexDocumentMetadata(other);
         elasticsearchOperations.indexOps(SearchDocument.class).refresh();
 
-        List<SearchDocument> results = documentSearchService.search("report");
+        List<SearchDocument> results = documentSearchService.search("report", new ArrayList<>());
 
         assertEquals(2, results.size());
         Set<UUID> ids = results.stream().map(SearchDocument::id).collect(Collectors.toSet());
@@ -163,17 +163,17 @@ class ElasticSearchIntegrationTest {
 
     private Document createDocument(String title, String originalFilename) {
         return Document.builder()
-            .id(UUID.randomUUID())
-            .title(title)
-            .originalFilename(originalFilename)
-            .contentType("application/pdf")
-            .fileSize(1_024L)
-            .fileBucket("integration-test")
-            .fileObjectKey(originalFilename)
-            .createdAt(Instant.now())
-            .processingStatus(Document.ProcessingStatus.COMPLETED)
-            .ocrText("Sample OCR text for " + title)
-            .summaryText("Summary for " + title)
-            .build();
+                .id(UUID.randomUUID())
+                .title(title)
+                .originalFilename(originalFilename)
+                .contentType("application/pdf")
+                .fileSize(1_024L)
+                .fileBucket("integration-test")
+                .fileObjectKey(originalFilename)
+                .createdAt(Instant.now())
+                .processingStatus(Document.ProcessingStatus.COMPLETED)
+                .ocrText("Sample OCR text for " + title)
+                .summaryText("Summary for " + title)
+                .build();
     }
 }

@@ -6,7 +6,7 @@ import at.technikum.restapi.persistence.model.Document.ProcessingStatus;
 import lombok.Builder;
 
 @Builder
-public record OcrStatusDto(
+public record WorkerStatusDto(
         UUID id,
         ProcessingStatus processingStatus,
         String processingError) {

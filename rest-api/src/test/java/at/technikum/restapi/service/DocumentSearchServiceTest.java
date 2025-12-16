@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -202,7 +203,7 @@ class DocumentSearchServiceTest {
     @Test
     void testSearch_withEmptyQuery_returnsEmptyList() {
         // When
-        List<SearchDocument> results = searchService.search("");
+        List<SearchDocument> results = searchService.search("", new ArrayList<>());
 
         // Then
         assertTrue(results.isEmpty());
@@ -212,7 +213,7 @@ class DocumentSearchServiceTest {
     @Test
     void testSearch_withNullQuery_returnsEmptyList() {
         // When
-        List<SearchDocument> results = searchService.search(null);
+        List<SearchDocument> results = searchService.search(null, new ArrayList<>());
 
         // Then
         assertTrue(results.isEmpty());
@@ -233,7 +234,7 @@ class DocumentSearchServiceTest {
                 .thenReturn(searchHits);
 
         // When
-        List<SearchDocument> results = searchService.search(query);
+        List<SearchDocument> results = searchService.search(query, new ArrayList<>());
 
         // Then
         assertNotNull(results);
@@ -254,7 +255,7 @@ class DocumentSearchServiceTest {
                 .thenReturn(searchHits);
 
         // When
-        List<SearchDocument> results = searchService.search(query);
+        List<SearchDocument> results = searchService.search(query, new ArrayList<>());
 
         // Then
         assertNotNull(results);
@@ -270,13 +271,13 @@ class DocumentSearchServiceTest {
                 .thenThrow(new RuntimeException("Search failed"));
 
         // When & Then
-        assertThrows(RuntimeException.class, () -> searchService.search(query));
+        assertThrows(RuntimeException.class, () -> searchService.search(query, new ArrayList<>()));
     }
 
     @Test
     void testSearch_withWhitespaceQuery_returnsEmptyList() {
         // When
-        List<SearchDocument> results = searchService.search("   ");
+        List<SearchDocument> results = searchService.search("   ", new ArrayList<>());
 
         // Then
         assertTrue(results.isEmpty());
